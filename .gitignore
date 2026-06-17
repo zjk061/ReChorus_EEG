@@ -1,0 +1,54 @@
+# Python cache and build outputs
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Virtual environments and local configuration
+.venv/
+venv/
+env/
+.env
+.env.*
+!.env.example
+
+# Jupyter generated files
+.ipynb_checkpoints/
+
+# AutoDL/local runtime artifacts
+.autodl/
+
+# Experiment outputs
+/log/
+/logs/
+/model/
+/models/
+/runs/
+/outputs/
+/checkpoints/
+*.pt
+*.pth
+*.ckpt
+
+# Generated dataset/cache files.
+# Keep dataset documentation in git, but do not commit full data dumps or reader caches.
+src/data/**/*.csv
+src/data/**/*.pkl
+src/data/**/*.pickle
+data/**/*.csv
+data/**/*.pkl
+data/**/*.pickle
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
