@@ -184,10 +184,22 @@ class BaseModel(nn.Module):
 		def collate_batch(self, feed_dicts: List[dict]) -> dict:
 			feed_dict = dict()
 			for key in feed_dicts[0]:
+				if key == 'history_length':
+					feed_dict[key] = torch.as_tensor([d[key] for d in feed_dicts], dtype=torch.long)
+					continue
+				if key == 'history_eeg_310':
+					tensors = [torch.as_tensor(d[key], dtype=torch.float32) for d in feed_dicts]
+					feed_dict[key] = pad_sequence(tensors, batch_first=True)
+					continue
+				if key.startswith('history_'):
+					dtype = torch.long if key == 'history_item_id' else torch.float32
+					tensors = [torch.as_tensor(d[key], dtype=dtype) for d in feed_dicts]
+					feed_dict[key] = pad_sequence(tensors, batch_first=True)
+					continue
 				if isinstance(feed_dicts[0][key], np.ndarray):
 					tmp_list = [len(d[key]) for d in feed_dicts]
 					if any([tmp_list[0] != l for l in tmp_list]):
-						stack_val = np.array([d[key] for d in feed_dicts], dtype=np.object)
+						stack_val = np.array([d[key] for d in feed_dicts], dtype=object)
 					else:
 						stack_val = np.array([d[key] for d in feed_dicts])
 				else:

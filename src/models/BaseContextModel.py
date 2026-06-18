@@ -12,6 +12,24 @@ from typing import List
 from utils import utils
 from models.BaseModel import *
 
+def normalize_history_value(name, value):
+	if name == 'history_length':
+		return int(value)
+	if value is None:
+		value = []
+	if name == 'history_item_id':
+		return np.array(value, dtype=np.int64)
+	if name == 'history_eeg_310':
+		arr = np.array(value, dtype=np.float32)
+		if arr.size == 0:
+			return arr.reshape(0, 310)
+		if arr.ndim == 1:
+			return arr.reshape(1, -1)
+		return arr
+	if name.startswith('history_'):
+		return np.array(value, dtype=np.float32)
+	return value
+
 """
 根据feed_dict这一份描述某一个用户的单份样本数据中的user_id，item_id和生成这份feed_dict的index（即：哪个用户），
 从reader类对象corpus包含的变量中取出这一份样本对应的（用户，物料，情况）三种上下文的其他特征的特征值。
@@ -27,6 +45,8 @@ def get_context_feature(feed_dict, index, corpus, data):
 		feed_dict[c] = corpus.user_features[feed_dict['user_id']][c]
 	for c in corpus.situation_feature_names:
 		feed_dict[c] = data[c][index]
+	for h in getattr(corpus, 'history_feature_names', []):
+		feed_dict[h] = normalize_history_value(h, data[h][index])
 	"""
 	注：在BaseModel.py中的CTRModel类里，feed_dict字典中的item_id和label都已经被包装为列表类型的数了。
 	不管原来御三家中每一份（行）数据里的item_id和label是一个数还是多个数的列表，进到最后的feed_dict中都会被套成列表类型的数据了
@@ -53,7 +73,7 @@ class ContextModel(GeneralModel):
 		super().__init__(args, corpus)
 		self.loss_n = args.loss_n
 		self.context_features = corpus.user_feature_names + corpus.item_feature_names + corpus.situation_feature_names\
-					+ ['user_id','item_id']
+					+ getattr(corpus, 'history_feature_names', []) + ['user_id','item_id']
 		self.feature_max = corpus.feature_max
 	
 	def loss(self, out_dict: dict):
@@ -91,7 +111,7 @@ class ContextCTRModel(CTRModel):
 		super().__init__(args, corpus)
 		# 所有类型的上下文特征名字以及最关键的user_id,item_id
 		self.context_features = corpus.user_feature_names + corpus.item_feature_names + corpus.situation_feature_names\
-					+ ['user_id','item_id']
+					+ getattr(corpus, 'history_feature_names', []) + ['user_id','item_id']
 		self.feature_max = corpus.feature_max
 
 	class Dataset(CTRModel.Dataset):

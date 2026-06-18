@@ -5,6 +5,7 @@ import random
 import logging
 import torch
 import datetime
+import ast
 import numpy as np
 import pandas as pd
 from typing import List, Dict, NoReturn, Any
@@ -43,12 +44,33 @@ def check(check_list: List[tuple]) -> NoReturn:
 			[t[0] + '\t' + str(d.shape), np.array2string(d, threshold=20)]
 		) + os.linesep)
 
-# 这个函数处理 DataFrame 中的列，特别是那些包含用符串写出来的列表的列。它将这些字符串转换为实际的 Python 列表
-# 比如，将字符串形式的列表（如 "[1, 2, 3]"）转换为实际的列表（如 [1, 2, 3]）。使它们成为真正的python对象
+def parse_maybe_list(value, col_name=None):
+	"""
+	Safely parse list-like CSV cells while keeping ordinary strings unchanged.
+
+	The original EEG column is stored as a quoted comma-separated float string
+	rather than a Python list, so it needs a dedicated fallback parser.
+	"""
+	if not isinstance(value, str):
+		if np.isscalar(value) and pd.isna(value):
+			return 0
+		return value
+	value = value.strip()
+	if value == '':
+		return 0
+	if value[0] in ['[', '(']:
+		return ast.literal_eval(value)
+	if col_name == 'c_EEG_data_310_f' and ',' in value:
+		return [float(x) for x in value.split(',') if x.strip() != '']
+	return value
+
+
+# 这个函数处理 DataFrame 中的列，特别是那些包含字符串写出来的列表的列。
+# 例如，将字符串形式的列表（如 "[1, 2, 3]"）转换为实际的列表（如 [1, 2, 3]）。
 def eval_list_columns(df: pd.DataFrame) -> pd.DataFrame:
 	for col in df.columns:
-		if pd.api.types.is_string_dtype(df[col]):
-			df[col] = df[col].apply(lambda x: eval(str(x)))  # some list-value columns
+		if pd.api.types.is_object_dtype(df[col]) or pd.api.types.is_string_dtype(df[col]):
+			df[col] = df[col].apply(lambda x: parse_maybe_list(x, col))
 	return df
 
 
