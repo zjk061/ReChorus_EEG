@@ -36,6 +36,50 @@ OUTPUT_COLUMNS = [
     'history_length',
 ]
 
+SPLIT_RATIOS = {
+    'train': 0.7,
+    'dev': 0.1,
+    'test': 0.2,
+}
+
+
+def split_counts(n_rows):
+    """Return per-user chronological split counts for train/dev/test."""
+    if n_rows <= 0:
+        return {'train': 0, 'dev': 0, 'test': 0}
+
+    phases = list(SPLIT_RATIOS)
+    raw_counts = {phase: n_rows * ratio for phase, ratio in SPLIT_RATIOS.items()}
+    counts = {phase: int(raw_counts[phase]) for phase in phases}
+
+    # If possible, keep every user represented in every split.
+    if n_rows >= len(phases):
+        for phase in phases:
+            counts[phase] = max(counts[phase], 1)
+
+    while sum(counts.values()) < n_rows:
+        phase = max(phases, key=lambda p: (raw_counts[p] - counts[p], SPLIT_RATIOS[p]))
+        counts[phase] += 1
+
+    min_count = 1 if n_rows >= len(phases) else 0
+    while sum(counts.values()) > n_rows:
+        candidates = [p for p in phases if counts[p] > min_count]
+        phase = max(candidates, key=lambda p: (counts[p] - raw_counts[p], counts[p]))
+        counts[phase] -= 1
+
+    return counts
+
+
+def split_phase(position, n_rows):
+    counts = split_counts(n_rows)
+    train_end = counts['train']
+    dev_end = train_end + counts['dev']
+    if position < train_end:
+        return 'train'
+    if position < dev_end:
+        return 'dev'
+    return 'test'
+
 
 def parse_eeg(value):
     if isinstance(value, list):
@@ -76,7 +120,8 @@ def build_dataset(source_dir: Path, target_dir: Path):
         for _, user_df in all_df.groupby('user_id', sort=False):
             user_df = user_df.sort_values(['time', 'source_order'])
             history = []
-            for row in user_df.itertuples(index=False):
+            user_rows = list(user_df.itertuples(index=False))
+            for pos, row in enumerate(user_rows):
                 history_item_id = [h['item_id'] for h in history]
                 history_eeg_310 = [h['eeg_310'] for h in history]
                 history_interest = [h['interest'] for h in history]
@@ -98,7 +143,8 @@ def build_dataset(source_dir: Path, target_dir: Path):
                     'history_arousal': json_cell(history_arousal),
                     'history_length': len(history_item_id),
                 }
-                writers[row.source_phase].writerow(new_row)
+                phase = split_phase(pos, len(user_rows))
+                writers[phase].writerow(new_row)
 
                 history.append({
                     'item_id': int(row.item_id),
@@ -125,7 +171,11 @@ def build_dataset(source_dir: Path, target_dir: Path):
         '- `history_item_id`：当前样本之前的历史 item 序列。\n'
         '- `history_eeg_310`：历史 item 对应的 310 维 EEG 序列，形状语义为 `[history_length, 310]`。\n'
         '- `history_interest`、`history_immersion`、`history_valence`、`history_arousal`：历史交互后的四类自评分序列。\n'
-        '- `history_length`：历史序列长度，空历史为 0，历史字段写为 `[]`。\n',
+        '- `history_length`：历史序列长度，空历史为 0，历史字段写为 `[]`。\n\n'
+        '## 划分策略\n\n'
+        '合并原始 `train/dev/test` 后，对每个用户各自按 `time` 从旧到新排序，'
+        '再按约 7:1:2 切分为新版 `train/dev/test`。因此三份数据都会包含每个有足够交互记录的用户，'
+        '且同一用户的 `train` 最早、`dev` 居中、`test` 最新。\n',
         encoding='utf-8'
     )
 

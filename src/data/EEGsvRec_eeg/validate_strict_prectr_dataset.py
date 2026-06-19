@@ -32,6 +32,48 @@ HISTORY_COLUMNS = [
     'history_arousal',
 ]
 
+SPLIT_RATIOS = {
+    'train': 0.7,
+    'dev': 0.1,
+    'test': 0.2,
+}
+
+
+def split_counts(n_rows):
+    if n_rows <= 0:
+        return {'train': 0, 'dev': 0, 'test': 0}
+
+    phases = list(SPLIT_RATIOS)
+    raw_counts = {phase: n_rows * ratio for phase, ratio in SPLIT_RATIOS.items()}
+    counts = {phase: int(raw_counts[phase]) for phase in phases}
+
+    if n_rows >= len(phases):
+        for phase in phases:
+            counts[phase] = max(counts[phase], 1)
+
+    while sum(counts.values()) < n_rows:
+        phase = max(phases, key=lambda p: (raw_counts[p] - counts[p], SPLIT_RATIOS[p]))
+        counts[phase] += 1
+
+    min_count = 1 if n_rows >= len(phases) else 0
+    while sum(counts.values()) > n_rows:
+        candidates = [p for p in phases if counts[p] > min_count]
+        phase = max(candidates, key=lambda p: (counts[p] - raw_counts[p], counts[p]))
+        counts[phase] -= 1
+
+    return counts
+
+
+def split_phase(position, n_rows):
+    counts = split_counts(n_rows)
+    train_end = counts['train']
+    dev_end = train_end + counts['dev']
+    if position < train_end:
+        return 'train'
+    if position < dev_end:
+        return 'dev'
+    return 'test'
+
 
 def parse_json_cell(value):
     if isinstance(value, str):
@@ -50,7 +92,7 @@ def parse_source_eeg(value):
     return eeg
 
 
-def expected_history_lengths(source_dir: Path):
+def expected_temporal_splits(source_dir: Path):
     frames = []
     for phase in ['train', 'dev', 'test']:
         df = pd.read_csv(source_dir / f'{phase}.csv').fillna(0)
@@ -63,8 +105,10 @@ def expected_history_lengths(source_dir: Path):
     for _, user_df in all_df.groupby('user_id', sort=False):
         user_df = user_df.sort_values(['time', 'source_order'])
         history = []
-        for row in user_df.itertuples(index=False):
-            expected[row.source_phase].append({
+        user_rows = list(user_df.itertuples(index=False))
+        for pos, row in enumerate(user_rows):
+            phase = split_phase(pos, len(user_rows))
+            expected[phase].append({
                 'user_id': int(row.user_id),
                 'item_id': int(row.item_id),
                 'time': int(row.time),
@@ -81,6 +125,21 @@ def expected_history_lengths(source_dir: Path):
                 'arousal': float(getattr(row, 'c_arousal_f')),
             })
     return expected
+
+
+def validate_user_coverage(expected):
+    users_by_phase = {phase: {row['user_id'] for row in rows} for phase, rows in expected.items()}
+    common_users = set.intersection(*users_by_phase.values())
+    all_users = set.union(*users_by_phase.values())
+    missing = {
+        phase: sorted(all_users - users)
+        for phase, users in users_by_phase.items()
+        if all_users - users
+    }
+    if missing:
+        raise AssertionError(f'Not every split contains all users: {missing}')
+    if common_users != all_users:
+        raise AssertionError('User coverage mismatch across splits')
 
 
 def validate_split(phase, target_path, expected_rows):
@@ -146,7 +205,8 @@ def main():
     parser.add_argument('--target_dir', type=Path, default=default_target)
     args = parser.parse_args()
 
-    expected = expected_history_lengths(args.source_dir)
+    expected = expected_temporal_splits(args.source_dir)
+    validate_user_coverage(expected)
     for phase in ['train', 'dev', 'test']:
         validate_split(phase, args.target_dir / f'{phase}.csv', expected[phase])
     validate_metadata(args.target_dir)
