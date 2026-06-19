@@ -25,6 +25,7 @@ FORBIDDEN_COLUMNS = {
 
 HISTORY_COLUMNS = [
     'history_item_id',
+    'history_label',
     'history_eeg_310',
     'history_interest',
     'history_immersion',
@@ -114,10 +115,12 @@ def expected_temporal_splits(source_dir: Path):
                 'time': int(row.time),
                 'label': int(row.label),
                 'history_item_id': [h['item_id'] for h in history],
+                'history_label': [h['label'] for h in history],
                 'history_length': len(history),
             })
             history.append({
                 'item_id': int(row.item_id),
+                'label': int(row.label),
                 'eeg_310': parse_source_eeg(getattr(row, 'c_EEG_data_310_f')),
                 'interest': float(getattr(row, 'c_interest_f')),
                 'immersion': float(getattr(row, 'c_immersion_f')),
@@ -162,6 +165,9 @@ def validate_split(phase, target_path, expected_rows):
             history_item_id = parse_json_cell(row['history_item_id'])
             if history_item_id != expected['history_item_id']:
                 raise AssertionError(f'{phase} row {idx}: history_item_id mismatch')
+            history_label = parse_json_cell(row['history_label'])
+            if history_label != expected['history_label']:
+                raise AssertionError(f'{phase} row {idx}: history_label mismatch')
             history_length = int(row['history_length'])
             if history_length != len(history_item_id):
                 raise AssertionError(f'{phase} row {idx}: history_length does not match history_item_id')

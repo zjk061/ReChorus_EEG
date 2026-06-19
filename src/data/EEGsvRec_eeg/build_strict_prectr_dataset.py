@@ -28,6 +28,7 @@ OUTPUT_COLUMNS = [
     'label',
     'c_video_type_c',
     'history_item_id',
+    'history_label',
     'history_eeg_310',
     'history_interest',
     'history_immersion',
@@ -123,6 +124,7 @@ def build_dataset(source_dir: Path, target_dir: Path):
             user_rows = list(user_df.itertuples(index=False))
             for pos, row in enumerate(user_rows):
                 history_item_id = [h['item_id'] for h in history]
+                history_label = [h['label'] for h in history]
                 history_eeg_310 = [h['eeg_310'] for h in history]
                 history_interest = [h['interest'] for h in history]
                 history_immersion = [h['immersion'] for h in history]
@@ -136,6 +138,7 @@ def build_dataset(source_dir: Path, target_dir: Path):
                     'label': int(row.label),
                     'c_video_type_c': int(getattr(row, 'c_video_type_c')),
                     'history_item_id': json_cell(history_item_id),
+                    'history_label': json_cell(history_label),
                     'history_eeg_310': json_cell(history_eeg_310),
                     'history_interest': json_cell(history_interest),
                     'history_immersion': json_cell(history_immersion),
@@ -148,6 +151,7 @@ def build_dataset(source_dir: Path, target_dir: Path):
 
                 history.append({
                     'item_id': int(row.item_id),
+                    'label': int(row.label),
                     'eeg_310': parse_eeg(getattr(row, 'c_EEG_data_310_f')),
                     'interest': float(getattr(row, 'c_interest_f')),
                     'immersion': float(getattr(row, 'c_immersion_f')),
@@ -169,6 +173,7 @@ def build_dataset(source_dir: Path, target_dir: Path):
         '```text\n' + '\n'.join(OUTPUT_COLUMNS) + '\n```\n\n'
         '## 历史字段说明\n\n'
         '- `history_item_id`：当前样本之前的历史 item 序列。\n'
+        '- `history_label`：当前样本之前的历史交互 label 序列，长度与 `history_item_id` 一致。\n'
         '- `history_eeg_310`：历史 item 对应的 310 维 EEG 序列，形状语义为 `[history_length, 310]`。\n'
         '- `history_interest`、`history_immersion`、`history_valence`、`history_arousal`：历史交互后的四类自评分序列。\n'
         '- `history_length`：历史序列长度，空历史为 0，历史字段写为 `[]`。\n\n'
