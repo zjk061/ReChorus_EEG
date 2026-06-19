@@ -192,7 +192,7 @@ class BaseModel(nn.Module):
 					feed_dict[key] = pad_sequence(tensors, batch_first=True)
 					continue
 				if key.startswith('history_'):
-					dtype = torch.long if key == 'history_item_id' else torch.float32
+					dtype = torch.long if key in ['history_item_id', 'history_label'] else torch.float32
 					tensors = [torch.as_tensor(d[key], dtype=dtype) for d in feed_dicts]
 					feed_dict[key] = pad_sequence(tensors, batch_first=True)
 					continue

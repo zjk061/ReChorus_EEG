@@ -17,7 +17,7 @@ def normalize_history_value(name, value):
 		return int(value)
 	if value is None:
 		value = []
-	if name == 'history_item_id':
+	if name in ['history_item_id', 'history_label']:
 		return np.array(value, dtype=np.int64)
 	if name == 'history_eeg_310':
 		arr = np.array(value, dtype=np.float32)
