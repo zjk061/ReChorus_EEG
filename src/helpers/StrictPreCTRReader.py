@@ -21,6 +21,7 @@ class StrictPreCTRReader(ContextReader):
 	allowed_situation_features = ['c_video_type_c']
 	history_feature_names = [
 		'history_item_id',
+		'history_label',
 		'history_eeg_310',
 		'history_interest',
 		'history_immersion',
