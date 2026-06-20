@@ -3,6 +3,7 @@ set -euo pipefail
 
 cd /root/autodl-tmp/src
 
+# Add --regenerate 1 to force rebuilding the reader pkl.
 python main.py \
   --model_name EEG_DGCN_v1 \
   --model_mode CTR \
@@ -11,7 +12,6 @@ python main.py \
   --include_user_features 1 \
   --include_item_features 1 \
   --include_situation_features 1 \
-  # --regenerate 1 \
   --loss_n BCE \
   --metric AUC,ACC,F1_SCORE,LOG_LOSS \
   --emb_size 64 \
