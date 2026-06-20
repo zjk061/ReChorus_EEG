@@ -4,8 +4,8 @@ set -euo pipefail
 cd /root/autodl-tmp/src
 
 python main.py \
-  --model_name CTRLightGCN \
-  --model_mode StrictPreCTR \
+  --model_name EEG_DGCN_v1 \
+  --model_mode CTR \
   --dataset EEGsvRec_eeg_strict_prectr \
   --path ./data/ \
   --include_user_features 1 \
