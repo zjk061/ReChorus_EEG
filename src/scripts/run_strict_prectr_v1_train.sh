@@ -11,7 +11,7 @@ python main.py \
   --include_user_features 1 \
   --include_item_features 1 \
   --include_situation_features 1 \
-  --regenerate 1 \
+  # --regenerate 1 \
   --loss_n BCE \
   --metric AUC,ACC,F1_SCORE,LOG_LOSS \
   --emb_size 64 \
