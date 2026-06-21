@@ -109,7 +109,7 @@ class BaseRunner(object):
         
 		# 日志记录
 		self.log_path = os.path.dirname(args.log_file) # path to save predictions
-		self.save_appendix = args.log_file.split("/")[-1].split(".")[0] # appendix for prediction saving
+		self.save_appendix = os.path.splitext(os.path.basename(args.log_file))[0] # appendix for prediction saving
 
     # 记录和计算代码运行的时间
 	def _check_time(self, start=False):
