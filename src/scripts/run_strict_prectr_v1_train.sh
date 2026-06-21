@@ -14,6 +14,7 @@ python main.py \
   --include_situation_features 1 \
   --loss_n BCE \
   --metric AUC,ACC,F1_SCORE,LOG_LOSS \
+  --main_metric AUC \
   --emb_size 64 \
   --history_max 50 \
   --num_heads 4 \
