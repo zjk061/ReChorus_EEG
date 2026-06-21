@@ -9,7 +9,8 @@ from models.BaseContextModel import ContextCTRModel
 class EEG_DGCN_v1CTR(ContextCTRModel):
 	reader = 'StrictPreCTRReader'
 	runner = 'CTRRunner'
-	extra_log_args = ['emb_size', 'history_max', 'num_heads', 'transformer_layers', 'batch_size']
+	extra_log_args = ['emb_size', 'history_max', 'num_heads', 'transformer_layers', 'batch_size',
+					  'use_history', 'use_history_eeg']
 
 	@staticmethod
 	def parse_model_args(parser):
@@ -35,6 +36,10 @@ class EEG_DGCN_v1CTR(ContextCTRModel):
 							help='Embedding size for video type.')
 		parser.add_argument('--fusion_hidden', type=int, default=64,
 							help='Hidden size of final fusion MLP.')
+		parser.add_argument('--use_history', type=int, default=1,
+							help='1: use history branch; 0: static baseline (zero history output).')
+		parser.add_argument('--use_history_eeg', type=int, default=1,
+							help='1: encode history EEG; 0: zero EEG embedding in history steps.')
 		return ContextCTRModel.parse_model_args(parser)
 
 	def __init__(self, args, corpus):
@@ -50,6 +55,8 @@ class EEG_DGCN_v1CTR(ContextCTRModel):
 		self.user_meta_dim = args.user_meta_dim
 		self.video_type_dim = args.video_type_dim
 		self.fusion_hidden = args.fusion_hidden
+		self.use_history = args.use_history
+		self.use_history_eeg = args.use_history_eeg
 		self.dropout = args.dropout
 		if self.history_max <= 0:
 			raise ValueError('history_max must be positive for EEG_DGCN_v1CTR.')
@@ -212,9 +219,12 @@ class EEG_DGCN_v1CTR(ContextCTRModel):
 		raise ValueError('Unsupported history tensor dim: %d' % tensor.dim())
 
 	def _encode_history(self, feed_dict, candidate_item_repr):
+		batch_size = feed_dict['batch_size']
+		if not self.use_history:
+			return torch.zeros(batch_size, self.emb_size, device=self.device)
+
 		raw_lengths = feed_dict['history_length'].long()
 		lengths = raw_lengths.clamp(max=self.history_max)
-		batch_size = feed_dict['batch_size']
 		if int(lengths.max().item()) == 0:
 			return torch.zeros(batch_size, self.emb_size, device=self.device)
 
@@ -236,7 +246,11 @@ class EEG_DGCN_v1CTR(ContextCTRModel):
 		history_item_emb = self.item_embedding(history_item_id)
 		history_label = history_label.clamp(min=0, max=1)
 		history_label_emb = self.history_label_embedding(history_label)
-		history_eeg_emb = self.history_eeg_encoder(history_eeg)
+		if not self.use_history_eeg:
+			history_eeg_emb = torch.zeros(
+				batch_size, seq_len, self.history_eeg_dim, device=self.device)
+		else:
+			history_eeg_emb = self.history_eeg_encoder(history_eeg)
 		emotion = torch.stack([
 			history_interest,
 			history_immersion,
