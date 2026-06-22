@@ -2,7 +2,7 @@
 
 > **定位：** 本文档是《[具体下一步改进分析规划.md](./具体下一步改进分析规划.md)》中**阶段 1（代码准备）**与**阶段 2（Ablation 实验）**的执行记录与结论汇总。  
 > **前置：** 阶段 0 基线确认见《[阶段0_baseline_results.md](./阶段0_baseline_results.md)》（实验 A 目标 test AUC = **0.667**）。  
-> **状态：** 阶段 1、阶段 2 均已于 **2026-06-21** 完成。  
+> **状态：** 阶段 1、阶段 2 均已于 **2026-06-21** 完成。阶段 3 方向于 **2026-06-22** 修订为「保留 EEG、改进编码与融合」。  
 > **评估规则：** 以 **test AUC** 为主指标；与 baseline 差 **0.01 以内**视为同一水平。
 
 ---
@@ -31,7 +31,7 @@
 | A | `run_ablation_A_full.sh` | 无（复现 baseline） |
 | B | `run_ablation_B_no_history.sh` | `--use_history 0` |
 | C | `run_ablation_C_no_eeg.sh` | `--use_history_eeg 0` |
-| D | `run_ablation_D_small_reg.sh` | `emb_size=32`, `fusion_hidden=32`, `dropout=0.4`, `l2=1e-4`, `lr=5e-4` |
+| D | `run_ablation_D_small_reg.sh` | **仅超参**：`emb_size=32`, `fusion_hidden=32`, `dropout=0.4`, `l2=1e-4`, `lr=5e-4`（**结构同 A**，非架构简化） |
 
 各脚本均包含：`--main_metric AUC`、`--random_seed 0`；dataset、batch_size、early_stop、epoch 上限与 A 保持一致。
 
@@ -67,40 +67,47 @@
 | A | 06-21 | `run_ablation_A_full.sh` | full（history + EEG） | 3 | 0.735 | 0.667 | 0.638 | 0.728 | 279,933 |
 | B | 06-21 | `run_ablation_B_no_history.sh` | 无 history | 3 | 0.748 | 0.718 | 0.800 | 0.881 | 279,933 |
 | C | 06-21 | `run_ablation_C_no_eeg.sh` | history，无 EEG | 1 | 0.749 | **0.759** | 0.528 | 0.509 | 279,933 |
-| D | 06-21 | `run_ablation_D_small_reg.sh` | 小模型+强正则，仍含 EEG | 7 | 0.737 | 0.702 | 0.694 | 0.788 | 125,309 |
+| D | `run_ablation_D_small_reg.sh` | **超参**缩小+强正则，仍含 MLP EEG（结构同 A） | 7 | 0.737 | 0.702 | 0.694 | 0.788 | 125,309 |
 
 **test AUC 排序：** C (0.759) > B (0.718) > D (0.702) > A (0.667)
 
-### 2.3 对照规划决策树的实际判定
+### 2.3 对照规划决策树的实际判定（2026-06-22 修订解读）
 
-规划 §2.3 决策树 | 实际数据 | **判定**
----|---|---
-B ≈ A → history 无增益 | B test 0.718，A test 0.667（B 更高） | ❌ 不能据此认为 history 无用（见结论 2）
-B 明显低于 A → history 有用 | B 高于 A，非低于 | ❌ 不适用
-C ≈ B 或 A → EEG 无增益 | C test 0.759，远高于 A/B | ✅ **EEG 无增益且有害**；应去 EEG
-C 明显低于 A → EEG 有增益 | C 高于 A | ❌ EEG 不值得保留
-D ≥ A 且 best_epoch 更晚 → 容量过大 | D test 0.702 > A；best_epoch 7 > 3 | ✅ 缩小+正则部分缓解过拟合
-D 仍明显低于 A → 需简化架构 | D 高于 A | ❌ 不适用；但 D 远低于 C
+> **重要：** 下表为 ablation **诊断**结论。项目约束要求**保留 EEG**；实验 C 不可作为 v1.1 主路线，详见《具体下一步改进分析规划.md》§修订说明。
 
-### 2.4 阶段 2 结论（四条）
+规划 §2.3 决策树 | 实际数据 | **诊断判定** | **对后续改进的含义**
+---|---|---|---
+B ≈ A → history 无增益 | B test 0.718，A test 0.667（B 更高） | ❌ 不能据此认为 history 无用 | history（含 label/emotion）值得保留
+B 明显低于 A → history 有用 | B 高于 A，非低于 | ❌ 不适用 | —
+C ≈ B 或 A → EEG 无增益 | C test 0.759，远高于 A/B | ⚠️ **当前 MLP 式 EEG 接入有害**（非「EEG 信息无用」） | 改 EEG 编码/融合，**不要**关闭 EEG
+C 明显低于 A → EEG 有增益 | C 高于 A | ❌ 不适用 | —
+D ≥ A 且 best_epoch 更晚 → 容量过大 | D test 0.702 > A；best_epoch 7 > 3 | ⚠️ **超参正则有效，但结构未变** | 不能止步于 D/E；需架构级调整（§3.4 I 系列）
+D 仍明显低于 A → 需简化架构 | D 高于 A | ❌ 不适用 | 仅靠超参不够，需 EEG 编码 + 架构改进
 
-1. **实验 C 为 ablation 最优配置**（test AUC **0.759**，较 baseline +0.092）：保留 history（item / label / emotion 序列），**去掉历史 EEG 编码**（`--use_history_eeg 0`）。
+### 2.4 阶段 2 结论（四条，2026-06-22 修订）
+
+1. **实验 C 为 ablation 诊断最优**（test AUC **0.759**）：说明在**当前实现下**，去掉历史 EEG 编码后模型泛化最好。该结果用于量化「MLP EEG 的负增益」，**不作为 v1.1 生产配置**（EEG 为项目创新点，必须保留）。
 
 2. **不能因 B > A 就砍掉整个 history 分支**：B 关掉了全部 history（含 label/emotion）；C 证明非 EEG 历史有显著增益（C 0.759 > B 0.718）。
 
-3. **历史 EEG 编码是主要拖累**：A（含 EEG）test 最低；C（去 EEG）test 最高；D 虽缩小模型但仍含 EEG，test 仅 0.702，远低于 C。
+3. **当前 v1 的历史 EEG 编码方式是主要拖累**：A（MLP EEG）test 最低；C（无 EEG）test 最高；D（**仅超参**缩小+正则+MLP EEG）test 0.702，优于 A 但仍低于 C。问题在**编码与融合方式**，不在 EEG 数据本身。D **未改变** Transformer + Cross-Attention 结构。
 
-4. **过拟合部分来自模型容量**：D 的 best_epoch=7 晚于 A/C，test 优于 A，说明强正则有效；但不如去 EEG 来得显著。
+4. **过拟合来自超参容量与结构容量两方面**：D 的 best_epoch=7 晚于 A/C，说明超参正则有一定效果；但 D 不是「架构小模型」，后续需在**保留 EEG** 的前提下做 DGCNN/门控（§3.2）及**架构级简化**（§3.4 I 系列）。
 
-### 2.5 对规划阶段 3 的输入（仅供衔接，详见规划文档 §阶段 3）
+### 2.5 对规划阶段 3 的输入（2026-06-22 修订）
 
-Ablation 结果指向规划中的**路线 3 变体**（EEG 无增益、history 有增益）：
+Ablation 结果指向**保留 EEG、尽力提升性能**的路线（见规划文档 §阶段 3）：
 
-- v1.1 默认以 **实验 C 配置**为起点（`use_history=1`, `use_history_eeg=0`）。
-- 可选 follow-up：在 C 基础上叠加 D 的小模型/强正则超参，**同时保持 `use_history_eeg=0`**。
-- 不建议：整体 static 化（B 路线）；保留 EEG 的 full 模型（A 路线）。
+- v1.1 **必须** `use_history=1`, `use_history_eeg=1`。
+- **性能目标**：不设人工上限；以**刷新历史最佳 test AUC** 为进展标志，理想方向是在保留 EEG 时 **超过全部现有 ablation（含 C 的 0.759）**。
+- **E1**：D 的超参配置 + 显式保留 EEG（超参基线，**非架构方案**）。
+- **F 系列**：历史 step 级 DGCNN 等 EEG 编码升级。
+- **I 系列**：架构级调整（去 Transformer、GRU、仅 cross-attn 等），与 D 式超参缩小区分。
+- **G 系列**：EEG 门控 / 双路 cross-attention 等交互改进。
+- **C（0.759）**：仅作无 EEG 诊断对照，**不作配置默认，也不作性能天花板**。
+- **不建议**：将 C 设为默认；把 D 称为架构小模型；放弃 EEG。
 
-具体 follow-up 实验与成功标准见《具体下一步改进分析规划.md》阶段 3，不在本文档展开。
+具体实验 ID 见《具体下一步改进分析规划.md》§3.0–3.7。
 
 ---
 
