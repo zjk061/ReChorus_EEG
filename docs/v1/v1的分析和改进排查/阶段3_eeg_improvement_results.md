@@ -1,0 +1,81 @@
+# 阶段 3 实验记录（§3.0）
+
+> 对应规划：《[具体下一步改进分析规划.md](./具体下一步改进分析规划.md)》§3.0–3.1  
+> **主指标：** test AUC（best checkpoint）  
+> **EEG 保留基准 A：** test AUC = **0.667**（Δ 以此为参照）  
+> **记录规则：** 每次跑完填写下表；「刷新最佳」= 在 **use_history_eeg=1** 的实验中超过此前最高 test AUC。
+
+---
+
+## 一、阶段性参照（阶段 0–2，非上限）
+
+| ID | 配置 | best_epoch | dev_AUC | **test_AUC** | Δ vs A | 保留 EEG | 备注 |
+|----|------|------------|---------|--------------|--------|----------|------|
+| A | full + MLP EEG | 3 | 0.735 | 0.667 | 0.000 | ✅ | 起点 |
+| B | 无 history | 3 | 0.748 | 0.718 | +0.051 | — | history 增益参照 |
+| C | 无 EEG（诊断） | 1 | 0.749 | 0.759 | +0.092 | ❌ | 不可作最终配置 |
+| D | 超参缩小+强正则 + MLP EEG | 7 | 0.737 | 0.702 | +0.035 | ✅ | 结构同 A，仅超参 |
+
+**当前 EEG 保留历史最佳 test AUC：** 0.702（D / 待 E 系列确认）
+
+---
+
+## 二、§3.1 E 系列（超参正则 + MLP EEG）
+
+| ID | 日期 | 脚本 | 相对 E1 改动 | best_epoch | dev_AUC | **test_AUC** | Δ vs A | dev-test gap | #params | 刷新最佳 | 备注 |
+|----|------|------|--------------|------------|---------|--------------|--------|--------------|---------|----------|------|
+| E1 | | `run_stage3_E1_small_reg_eeg.sh` | 同 D 超参，显式 `use_history_eeg=1` | | | | | | | | |
+| E2 | | `run_stage3_E2_early_stop5.sh` | `early_stop=5` | | | | | | | | |
+| E3 | | `run_stage3_E3_eeg_dropout.sh` | `eeg_dropout=0.5` | | | | | | | | |
+
+**公共设置（E1 基准）：**
+
+```text
+emb_size=32, fusion_hidden=32, dropout=0.4, eeg_dropout=0.4 (E3 为 0.5)
+lr=5e-4, l2=1e-4, batch_size=16, early_stop=10 (E2 为 5)
+use_history=1, use_history_eeg=1, random_seed=0, main_metric=AUC
+```
+
+---
+
+## 三、从日志提取指标
+
+训练结束后，在 `src` 目录执行：
+
+```bash
+cd /root/autodl-tmp/src
+conda activate eeg3104
+
+# 解析单个日志（自动打印 Δ vs A、是否刷新 EEG 保留最佳）
+python scripts/analyze_stage3_experiment.py --log ../log/EEG_DGCN_v1CTR/<日志文件名>.txt
+
+# 扫描 log 目录下所有含 stage3 / eeg_dropout 的日志
+python scripts/analyze_stage3_experiment.py --scan_dir ../log/EEG_DGCN_v1CTR
+```
+
+日志中读取：
+
+1. `Best Iter(dev)=` → best_epoch  
+2. `Dev After Training` → dev AUC / LOG_LOSS  
+3. `Test After Training` → **test AUC**  
+4. `#params:` → 参数量（若日志中有）
+
+---
+
+## 四、复现 §3.1 命令
+
+```bash
+cd /root/autodl-tmp/src
+conda activate eeg3104
+
+bash scripts/阶段3_超参正则保留EEG/run_stage3_E1_small_reg_eeg.sh
+bash scripts/阶段3_超参正则保留EEG/run_stage3_E2_early_stop5.sh
+bash scripts/阶段3_超参正则保留EEG/run_stage3_E3_eeg_dropout.sh
+```
+
+---
+
+## 五、§3.1 判定（填表后对照）
+
+- E1 刷新 EEG 保留最佳 → 继续 E2/E3，并行 §3.2  
+- E1 仅略优于 A、仍远低于 C → 不堆超参，转 §3.2 / §3.3 / §3.5  

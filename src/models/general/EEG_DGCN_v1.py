@@ -10,7 +10,7 @@ class EEG_DGCN_v1CTR(ContextCTRModel):
 	reader = 'StrictPreCTRReader'
 	runner = 'CTRRunner'
 	extra_log_args = ['emb_size', 'history_max', 'num_heads', 'transformer_layers', 'batch_size',
-					  'use_history', 'use_history_eeg']
+					  'use_history', 'use_history_eeg', 'eeg_dropout']
 
 	@staticmethod
 	def parse_model_args(parser):
@@ -40,6 +40,8 @@ class EEG_DGCN_v1CTR(ContextCTRModel):
 							help='1: use history branch; 0: static baseline (zero history output).')
 		parser.add_argument('--use_history_eeg', type=int, default=1,
 							help='1: encode history EEG; 0: zero EEG embedding in history steps.')
+		parser.add_argument('--eeg_dropout', type=float, default=None,
+							help='Dropout on history EEG encoder; default uses global --dropout.')
 		return ContextCTRModel.parse_model_args(parser)
 
 	def __init__(self, args, corpus):
@@ -57,6 +59,7 @@ class EEG_DGCN_v1CTR(ContextCTRModel):
 		self.fusion_hidden = args.fusion_hidden
 		self.use_history = args.use_history
 		self.use_history_eeg = args.use_history_eeg
+		self.eeg_dropout_rate = args.eeg_dropout if args.eeg_dropout is not None else args.dropout
 		self.dropout = args.dropout
 		if self.history_max <= 0:
 			raise ValueError('history_max must be positive for EEG_DGCN_v1CTR.')
@@ -112,7 +115,7 @@ class EEG_DGCN_v1CTR(ContextCTRModel):
 			nn.LayerNorm(310),
 			nn.Linear(310, self.history_eeg_dim),
 			nn.GELU(),
-			nn.Dropout(self.dropout)
+			nn.Dropout(self.eeg_dropout_rate)
 		)
 		self.history_emotion_encoder = nn.Sequential(
 			nn.Linear(4, self.history_emotion_dim),
