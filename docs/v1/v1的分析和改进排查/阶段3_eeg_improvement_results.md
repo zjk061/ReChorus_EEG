@@ -28,7 +28,24 @@
 | E2 | | `run_stage3_E2_early_stop5.sh` | `early_stop=5` | | | | | | | | |
 | E3 | | `run_stage3_E3_eeg_dropout.sh` | `eeg_dropout=0.5` | | | | | | | | |
 
-**公共设置（E1 基准）：**
+### 训练环境说明（CPU / 内存）
+
+| 现象 | 含义 |
+|------|------|
+| 日志出现 `Device: cpu` | 当前无可用 CUDA，在 CPU 上训练 |
+| 行尾 `22188 Killed` | **不是 Python 报错**，是 Linux **OOM Killer** 因内存不足强制终止进程（exit 137） |
+
+**常见原因：** `StrictPreCTRReader.pkl`（约 589MB 磁盘）反序列化后含完整 `history_eeg_310` 序列，内存占用可达 **数 GB**；默认 `--buffer 1` 还会缓存全部 dev/test 样本的 feed_dict，进一步占内存；`--num_workers 5` 会 fork 多个子进程。
+
+**建议：**
+
+1. **首选：** 在 AutoDL **GPU 实例**上跑 E1（通常 ≥30GB 内存，与之前 ablation 一致）。
+2. **无 GPU 但内存 ≥4GB：** 使用低内存脚本  
+   `bash scripts/阶段3_v1保留eeg情况下开发探索/阶段3.1_超参正则保留EEG/run_stage3_E1_cpu_lowmem.sh`  
+   （`num_workers=0`, `buffer=0`, `batch_size=8`, `gpu=''`）
+3. **内存约 2GB 的 CPU 容器：** 很可能仍无法加载 corpus，**请换更大内存实例**，不要在此环境跑完整 E1。
+
+---
 
 ```text
 emb_size=32, fusion_hidden=32, dropout=0.4, eeg_dropout=0.4 (E3 为 0.5)
@@ -68,9 +85,9 @@ python scripts/analyze_stage3_experiment.py --scan_dir ../log/EEG_DGCN_v1CTR
 cd /root/autodl-tmp/src
 conda activate eeg3104
 
-bash scripts/阶段3_超参正则保留EEG/run_stage3_E1_small_reg_eeg.sh
-bash scripts/阶段3_超参正则保留EEG/run_stage3_E2_early_stop5.sh
-bash scripts/阶段3_超参正则保留EEG/run_stage3_E3_eeg_dropout.sh
+bash scripts/阶段3_v1保留eeg情况下开发探索/阶段3.1_超参正则保留EEG/run_stage3_E1_small_reg_eeg.sh
+bash scripts/阶段3_v1保留eeg情况下开发探索/阶段3.1_超参正则保留EEG/run_stage3_E2_early_stop5.sh
+bash scripts/阶段3_v1保留eeg情况下开发探索/阶段3.1_超参正则保留EEG/run_stage3_E3_eeg_dropout.sh
 ```
 
 ---
