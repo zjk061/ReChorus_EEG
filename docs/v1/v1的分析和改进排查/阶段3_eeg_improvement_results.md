@@ -423,3 +423,54 @@ bash scripts/阶段3_v1保留eeg情况下开发探索/阶段3.2_历史EEG_DGCNN�
 | 日志 | `log/EEG_DGCN_v1CTR/消融F2.txt` |
 | 预测 dev/test | `log/EEG_DGCN_v1CTR/消融F2/rec-EEG_DGCN_v1CTR-{dev,test}.csv` |
 | checkpoint | `model/...__history_eeg_encoder=dgcnn__eeg_dropout=0.4.pt` |
+
+---
+
+## 七、§3.3 H 系列（EEG–情绪步内对齐融合）
+
+> **实现日期：** 2026-06-23  
+> **代码：** `src/models/general/eeg_emotion_fusion.py` + `EEG_DGCN_v1.py`  
+> **脚本目录：** `src/scripts/阶段3_v1保留eeg情况下开发探索/阶段3.3_EEG情绪步内对齐/`
+
+### 实现开关
+
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `--eeg_emotion_fusion` | `concat` / `emo_gate` / `cross_attn` / `bilinear` / `co_attn` / `residual` | `concat`（与改前行为一致） |
+| `--eeg_emo_align_dim` | cross-attn / residual / H4 对齐投影维度 | 32 |
+| `--eeg_emo_bilinear_dim` | bilinear 输出维度（H5） | 48 |
+| `--align_loss_weight` | H4 辅助 cosine 对齐损失权重 | 0.0 |
+
+### 实验记录表（跑完后填写）
+
+| ID | 日期 | 脚本 | fusion 模式 | EEG 编码 | best_epoch | dev_AUC | **test_AUC** | Δ vs A | Δ vs F1 | 刷新最佳 | 备注 |
+|----|------|------|-------------|----------|------------|---------|--------------|--------|---------|----------|------|
+| H1 | | `run_stage3_H1_emo_gate.sh` | emo_gate | MLP | | | | | | | |
+| H2 | | `run_stage3_H2_eeg_query_emo.sh` | cross_attn | MLP | | | | | | | |
+| H3 | | `run_stage3_H3_co_attn.sh` | co_attn | MLP | | | | | | | |
+| H4 | | `run_stage3_H4_align_loss.sh` | cross_attn + align_loss=0.05 | MLP | | | | | | | |
+| H5 | | `run_stage3_H5_bilinear.sh` | bilinear | MLP | | | | | | | |
+| H6 | | `run_stage3_H6_dgcnn_emo_cross.sh` | cross_attn | DGCNN | | | | | | | F1 + H2 组合 |
+
+**当前 EEG 保留历史最佳 test AUC：** **0.7349**（F1，待 H 系列刷新）
+
+### 复现 §3.3 命令
+
+```bash
+cd /root/autodl-tmp/src
+conda activate eeg3104
+
+bash scripts/阶段3_v1保留eeg情况下开发探索/阶段3.3_EEG情绪步内对齐/run_stage3_H1_emo_gate.sh
+bash scripts/阶段3_v1保留eeg情况下开发探索/阶段3.3_EEG情绪步内对齐/run_stage3_H2_eeg_query_emo.sh
+bash scripts/阶段3_v1保留eeg情况下开发探索/阶段3.3_EEG情绪步内对齐/run_stage3_H3_co_attn.sh
+bash scripts/阶段3_v1保留eeg情况下开发探索/阶段3.3_EEG情绪步内对齐/run_stage3_H4_align_loss.sh
+bash scripts/阶段3_v1保留eeg情况下开发探索/阶段3.3_EEG情绪步内对齐/run_stage3_H5_bilinear.sh
+bash scripts/阶段3_v1保留eeg情况下开发探索/阶段3.3_EEG情绪步内对齐/run_stage3_H6_dgcnn_emo_cross.sh
+```
+
+### §3.3 判定规则
+
+- 任一 H 在 **use_history_eeg=1** 下 test AUC **> 0.7349** → 定为默认步内融合，H6 若更优则作为 v1.1 候选  
+- H1–H5 整体仍 ≤ A（0.667）→ 检查 DGCNN（F1）底座 + H6；或 J 系列归一化  
+- H4 仅在 H2 有收益时再调 `align_loss_weight` 网格  
+

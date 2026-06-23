@@ -5,13 +5,15 @@ import torch.nn as nn
 
 from models.BaseContextModel import ContextCTRModel
 from models.general.eeg_dgcnn_encoder import HistoryStepDGCNNEncoder
+from models.general.eeg_emotion_fusion import EEGEmotionFusion, EEGEmotionAlignLoss
 
 
 class EEG_DGCN_v1CTR(ContextCTRModel):
 	reader = 'StrictPreCTRReader'
 	runner = 'CTRRunner'
-	extra_log_args = ['emb_size', 'history_max', 'num_heads', 'transformer_layers', 'batch_size',
-					  'use_history', 'use_history_eeg', 'history_eeg_encoder', 'eeg_dropout']
+	extra_log_args = ['emb_size', 'history_max', 'num_heads', 'batch_size',
+					  'use_history', 'use_history_eeg', 'history_eeg_encoder', 'eeg_dropout',
+					  'eeg_emotion_fusion', 'align_loss_weight']
 
 	@staticmethod
 	def parse_model_args(parser):
@@ -50,6 +52,15 @@ class EEG_DGCN_v1CTR(ContextCTRModel):
 							help='DGCNN hidden channels when history_eeg_encoder=dgcnn.')
 		parser.add_argument('--dgcnn_k', type=int, default=8,
 							help='DGCNN KNN k when history_eeg_encoder=dgcnn.')
+		parser.add_argument('--eeg_emotion_fusion', type=str, default='concat',
+							choices=['concat', 'emo_gate', 'cross_attn', 'bilinear', 'co_attn', 'residual'],
+							help='Step-level EEG–emotion fusion before history step encoder (§3.3 H series).')
+		parser.add_argument('--eeg_emo_align_dim', type=int, default=32,
+							help='Hidden dim for cross-attn / residual EEG–emotion fusion.')
+		parser.add_argument('--eeg_emo_bilinear_dim', type=int, default=48,
+							help='Output dim for bilinear EEG–emotion fusion (H5).')
+		parser.add_argument('--align_loss_weight', type=float, default=0.0,
+							help='Weight for auxiliary EEG–emotion cosine alignment loss (H4).')
 		return ContextCTRModel.parse_model_args(parser)
 
 	def __init__(self, args, corpus):
@@ -72,12 +83,19 @@ class EEG_DGCN_v1CTR(ContextCTRModel):
 		self.dgcnn_k = args.dgcnn_k
 		self.eeg_dropout_rate = args.eeg_dropout if args.eeg_dropout is not None else args.dropout
 		self.dropout = args.dropout
+		self.eeg_emotion_fusion_mode = args.eeg_emotion_fusion
+		self.eeg_emo_align_dim = args.eeg_emo_align_dim
+		self.eeg_emo_bilinear_dim = args.eeg_emo_bilinear_dim
+		self.align_loss_weight = args.align_loss_weight
 		if self.history_eeg_encoder_type not in ('mlp', 'dgcnn'):
 			raise ValueError('history_eeg_encoder must be mlp or dgcnn.')
 		if self.history_max <= 0:
 			raise ValueError('history_max must be positive for EEG_DGCN_v1CTR.')
 		if self.emb_size % self.num_heads != 0:
 			raise ValueError('emb_size must be divisible by num_heads for multi-head attention.')
+		if self.eeg_emotion_fusion_mode in ('cross_attn', 'co_attn', 'residual'):
+			if self.eeg_emo_align_dim % self.num_heads != 0:
+				raise ValueError('eeg_emo_align_dim must be divisible by num_heads for attention fusion.')
 
 		self.user_cont_features = [f for f in ['u_age_f', 'u_usage_f'] if f in corpus.user_feature_names]
 		self.item_meta_features = list(corpus.item_feature_names)
@@ -143,7 +161,25 @@ class EEG_DGCN_v1CTR(ContextCTRModel):
 			nn.GELU(),
 			nn.Dropout(self.dropout)
 		)
-		history_step_in = self.emb_size + self.history_label_dim + self.history_eeg_dim + self.history_emotion_dim
+		self.eeg_emotion_fusion = EEGEmotionFusion(
+			mode=self.eeg_emotion_fusion_mode,
+			eeg_dim=self.history_eeg_dim,
+			emo_dim=self.history_emotion_dim,
+			align_dim=self.eeg_emo_align_dim,
+			num_heads=self.num_heads,
+			dropout=self.dropout,
+			bilinear_out_dim=self.eeg_emo_bilinear_dim,
+		)
+		self.history_multimodal_dim = self.eeg_emotion_fusion.output_dim
+		if self.align_loss_weight > 0:
+			self.eeg_emotion_align_loss = EEGEmotionAlignLoss(
+				eeg_dim=self.history_eeg_dim,
+				emo_dim=self.history_emotion_dim,
+				align_dim=self.eeg_emo_align_dim,
+			)
+		else:
+			self.eeg_emotion_align_loss = None
+		history_step_in = self.emb_size + self.history_label_dim + self.history_multimodal_dim
 		self.history_step_encoder = nn.Sequential(
 			nn.Linear(history_step_in, self.emb_size),
 			nn.GELU(),
@@ -242,15 +278,18 @@ class EEG_DGCN_v1CTR(ContextCTRModel):
 			return nn.utils.rnn.pad_sequence(rows, batch_first=True)
 		raise ValueError('Unsupported history tensor dim: %d' % tensor.dim())
 
+	def _fuse_eeg_emotion(self, eeg_emb, emo_emb):
+		return self.eeg_emotion_fusion(eeg_emb, emo_emb)
+
 	def _encode_history(self, feed_dict, candidate_item_repr):
 		batch_size = feed_dict['batch_size']
 		if not self.use_history:
-			return torch.zeros(batch_size, self.emb_size, device=self.device)
+			return torch.zeros(batch_size, self.emb_size, device=self.device), None
 
 		raw_lengths = feed_dict['history_length'].long()
 		lengths = raw_lengths.clamp(max=self.history_max)
 		if int(lengths.max().item()) == 0:
-			return torch.zeros(batch_size, self.emb_size, device=self.device)
+			return torch.zeros(batch_size, self.emb_size, device=self.device), None
 
 		history_item_id = self._truncate_history(feed_dict['history_item_id'].long(), raw_lengths)
 		history_label = self._truncate_history(feed_dict['history_label'].long(), raw_lengths)
@@ -282,12 +321,15 @@ class EEG_DGCN_v1CTR(ContextCTRModel):
 			history_arousal
 		], dim=-1)
 		history_emotion_emb = self.history_emotion_encoder(emotion)
+		history_multimodal_emb = self._fuse_eeg_emotion(history_eeg_emb, history_emotion_emb)
+		align_loss = None
+		if self.eeg_emotion_align_loss is not None:
+			align_loss = self.eeg_emotion_align_loss(history_eeg_emb, history_emotion_emb, mask)
 
 		step_emb = self.history_step_encoder(torch.cat([
 			history_item_emb,
 			history_label_emb,
-			history_eeg_emb,
-			history_emotion_emb
+			history_multimodal_emb
 		], dim=-1))
 		step_emb = step_emb + self.position_embedding(positions.clamp(max=self.history_max - 1))
 		history_context = self.history_transformer(step_emb, src_key_padding_mask=mask)
@@ -299,15 +341,26 @@ class EEG_DGCN_v1CTR(ContextCTRModel):
 			key_padding_mask=mask
 		)
 		candidate_history = candidate_history.squeeze(1)
-		return candidate_history * non_empty.float().unsqueeze(-1)
+		history_repr = candidate_history * non_empty.float().unsqueeze(-1)
+		return history_repr, align_loss
+
+	def loss(self, out_dict):
+		loss = super().loss(out_dict)
+		align_loss = out_dict.get('align_loss')
+		if align_loss is not None and self.align_loss_weight > 0:
+			loss = loss + self.align_loss_weight * align_loss
+		return loss
 
 	def forward(self, feed_dict):
 		user_repr = self._encode_user(feed_dict)
 		candidate_item_repr = self._encode_candidate_item(feed_dict)
-		candidate_aware_history = self._encode_history(feed_dict, candidate_item_repr)
+		candidate_aware_history, align_loss = self._encode_history(feed_dict, candidate_item_repr)
 		fusion = torch.cat([user_repr, candidate_item_repr, candidate_aware_history], dim=-1)
 		prediction = self.fusion_mlp(fusion).squeeze(-1).sigmoid()
-		return {
+		out_dict = {
 			'prediction': prediction.view(-1),
 			'label': feed_dict['label'].view(-1)
 		}
+		if align_loss is not None:
+			out_dict['align_loss'] = align_loss
+		return out_dict

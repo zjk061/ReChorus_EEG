@@ -241,7 +241,10 @@ if __name__ == '__main__':
 	# log_args列表中存放相关的所有参数
 	log_args = [init_args.model_name+init_args.model_mode, args.dataset+args.data_appendix, str(args.random_seed)]
 	for arg in ['lr', 'l2'] + model_name.extra_log_args:
-		log_args.append(arg + '=' + str(eval('args.' + arg)))
+		val = eval('args.' + arg)
+		if val is None:
+			continue
+		log_args.append(arg + '=' + str(val))
 	# 使用 __ 作为分隔符，将 log_args 中的所有部分拼接成一个字符串。使用 replace(' ', '__') 将字符串中的空格替换为 __，确保文件名中没有空格。
 	# 生成文件名log_file_name
 	log_file_name = '__'.join(log_args).replace(' ', '__')
