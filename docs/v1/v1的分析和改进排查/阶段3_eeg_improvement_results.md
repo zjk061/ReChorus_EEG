@@ -16,7 +16,7 @@
 | C | 无 EEG（诊断） | 1 | 0.749 | 0.759 | +0.092 | ❌ | 不可作最终配置 |
 | D | 超参缩小+强正则 + MLP EEG | 7 | 0.737 | 0.702 | +0.035 | ✅ | 结构同 A，仅超参 |
 
-**当前 EEG 保留历史最佳 test AUC：** **0.7021**（E1，2026-06-23）
+**当前 EEG 保留历史最佳 test AUC：** **0.7349**（F1，2026-06-23）
 
 ---
 
@@ -267,8 +267,8 @@ E1 与阶段 2 实验 D **逐 epoch 指标相同**，验证了 E1 脚本与 abla
 
 | ID | 日期 | 脚本 | 相对对照的唯一改动 | best_epoch | dev_AUC | **test_AUC** | Δ vs A | dev-test gap | #params | 刷新最佳 | 备注 |
 |----|------|------|-------------------|------------|---------|--------------|--------|--------------|---------|----------|------|
-| F1 | | `run_stage3_F1_dgcnn_history_eeg.sh` | `--history_eeg_encoder dgcnn`（超参同 A） | | | | | | | | |
-| F2 | | `run_stage3_F2_dgcnn_small_reg.sh` | F1 + E1 超参（emb=32, dropout=0.4, lr=5e-4, l2=1e-4） | | | | | | | | |
+| F1 | 06-23 | `run_stage3_F1_dgcnn_history_eeg.sh` | `--history_eeg_encoder dgcnn`（超参同 A） | 1 | 0.710 | **0.7349** | +0.068 | −0.025 | 271,921 | ✅ | 显著优于 A/E1，仍低于 C |
+| F2 | 06-23 | `run_stage3_F2_dgcnn_small_reg.sh` | F1 + E1 超参（emb=32, dropout=0.4, lr=5e-4, l2=1e-4） | 4 | 0.751 | **0.7285** | +0.062 | +0.023 | 117,297 | — | 低于 F1，DGCNN+E1 正则未更优 |
 
 **实现说明：**
 
@@ -295,6 +295,131 @@ bash scripts/阶段3_v1保留eeg情况下开发探索/阶段3.2_历史EEG_DGCNN�
 
 ### §3.2 判定（填表后对照）
 
+**F1 结论（2026-06-23）：**
+
+- ✅ **刷新 EEG 保留历史最佳**（test AUC **0.7349**，较 E1 +0.0328，较 A +0.0679）
+- ✅ **DGCNN 编码显著优于 MLP**（同 A 超参：A test 0.667 → F1 test 0.7349）
+- ⚠️ **仍低于无 EEG 对照 C**（0.759，差约 2.4 点），但差距已从 E1 的 5.7 点大幅缩小
+- ⚠️ **best epoch=1，dev 随后回落**（epoch 2–11 dev AUC 持续低于 epoch 1）；test 反而高于 dev（gap −2.5 点），与 dev 样本少、方差大有关
+- **下一步：** 优先跑 **F2**（DGCNN + E1 强正则），看能否在保留 DGCNN 增益的同时稳定泛化；并行可试 §3.3 H 系列
+
+**F2 结论（2026-06-23）：**
+
+- — **未刷新 EEG 保留最佳**（test AUC **0.7285**，低于 F1 的 **0.7349**，差 **0.0064**）
+- ✅ **仍显著优于 MLP 路线**（较 E1 +0.0264，较 A +0.0615）
+- ⚠️ **dev 更高、test 更低：** dev 0.7512（F 系列最高 dev），但 test 0.7285 < F1；dev→test gap **2.3 点**（F1 为 −2.5 点）
+- **含义：** E1 式强正则 + 小模型（emb=32）配合 DGCNN **未能超过** F1（A 超参 + DGCNN）；**F1 仍为 §3.2 最优配置**
+- **§3.2 F 系列总结：** **F1（DGCNN + A 超参）为当前 v1.1 EEG 编码首选**；下一步 §3.3 H 系列建议以 **F1 超参 + DGCNN** 为底座（H6）
+
+判定规则：
+
 - F1 刷新 EEG 保留最佳 → 将 DGCNN 定为默认 EEG 编码，进入 §3.3 H 系列  
 - F2 > F1 → 采用 F2 配置作为 DGCNN 基线  
 - F1/F2 仍低于 D(0.702) → 检查 DGCNN 容量/正则，或与 §3.3 步内对齐组合（H6）  
+
+---
+
+## 六（附）、F1 详细分析（2026-06-23）
+
+**脚本：** `run_stage3_F1_dgcnn_history_eeg.sh`（ablation A 超参 + `--history_eeg_encoder dgcnn`）  
+**日志：** `log/EEG_DGCN_v1CTR/...__history_eeg_encoder=dgcnn__eeg_dropout=0.2.txt`  
+**环境：** CUDA，`#params=271,921`，训练 **11 epoch** 后早停（best epoch **1**），总耗时约 2.1 分钟
+
+### 最终指标（best checkpoint）
+
+| 指标 | Dev | Test |
+|------|-----|------|
+| **AUC（主）** | **0.7104** | **0.7349** |
+| LOG_LOSS | 0.552 | 0.523 |
+| ACC@0.5 | 0.730 | 0.740 |
+| F1@0.5 | 0.525 | 0.544 |
+
+预测 CSV 复核 AUC 与日志一致（dev 0.7104，test 0.7349）。
+
+### 与关键对照对比
+
+| ID | 编码器 | 超参 | test AUC | Δ vs A | best_epoch |
+|----|--------|------|----------|--------|------------|
+| A | MLP | 默认 | 0.667 | — | 3 |
+| E1 | MLP | 强正则 | 0.7021 | +0.035 | 7 |
+| **F1** | **DGCNN** | 同 A | **0.7349** | **+0.068** | 1 |
+| C | 无 EEG | — | 0.759 | +0.092 | 1 |
+
+**核心发现：** 在相同 ablation A 超参下，仅将历史 EEG 编码从 MLP 换为 step 级 DGCNN，test AUC 从 **0.667 提升到 0.735**（+6.8 点），验证了阶段 2 诊断——问题在 MLP 编码方式，而非 EEG 信息本身无用。
+
+### 训练过程要点
+
+1. **epoch 1 即达 peak（dev AUC 0.710）**，之后 dev 持续走低（epoch 6 低至 0.651），早停于 epoch 11；与 C（无 EEG，best epoch 1）模式类似。
+2. **test > dev：** test AUC 0.735 > dev 0.710（gap −2.5 点）。dev 仅 355 条，DGCNN 在 epoch 1 的 checkpoint 在 test（716 条）上泛化更好，不宜过度解读为「欠拟合」。
+3. **参数量略低于 A**（271,921 vs 279,933）：DGCNN 替换了 310→32 的 MLP，但引入两层 DynamicalGraphConv。
+4. **仍低于 C 2.4 点：** 说明 DGCNN 已大幅释放 EEG 增益，但当前 MLP 式 concat 融合 / 序列建模仍可能限制进一步逼近无 EEG 上限。
+
+### 产物路径
+
+| 类型 | 路径 |
+|------|------|
+| 日志 | `log/EEG_DGCN_v1CTR/...__history_eeg_encoder=dgcnn__eeg_dropout=0.2.txt` |
+| 预测 dev/test | 同目录下 `rec-EEG_DGCN_v1CTR-{dev,test}.csv` |
+| checkpoint | `model/...__history_eeg_encoder=dgcnn__eeg_dropout=0.2.pt` |
+
+---
+
+## 六（附2）、F2 详细分析（2026-06-23）
+
+**脚本：** `run_stage3_F2_dgcnn_small_reg.sh`（E1 超参 + `--history_eeg_encoder dgcnn`）  
+**日志：** `log/EEG_DGCN_v1CTR/消融F2.txt`（预测 CSV 归档于 `消融F2/`）  
+**环境：** CUDA，`#params=117,297`，训练 **13 epoch** 后早停（best epoch **4**），总耗时约 2.6 分钟
+
+### 最终指标（best checkpoint）
+
+| 指标 | Dev | Test |
+|------|-----|------|
+| **AUC（主）** | **0.7512** | **0.7285** |
+| LOG_LOSS | 0.577 | 0.615 |
+| ACC@0.5 | 0.732 | 0.739 |
+| F1@0.5 | 0.513 | 0.524 |
+
+预测 CSV 复核 AUC 与日志一致（dev 0.7512，test 0.7285）。
+
+### F1 vs F2 对比（同为 DGCNN，不同超参）
+
+| 项 | F1（A 超参） | F2（E1 超参） |
+|----|--------------|---------------|
+| emb_size / fusion | 64 / 64 | 32 / 32 |
+| dropout / eeg_dropout | 0.2 / 0.2 | 0.4 / 0.4 |
+| lr / l2 | 1e-3 / 1e-6 | 5e-4 / 1e-4 |
+| best epoch | 1 | 4 |
+| dev AUC | 0.7104 | **0.7512** |
+| **test AUC** | **0.7349** | 0.7285 |
+| dev→test gap | −0.025 | +0.023 |
+| #params | 271,921 | 117,297 |
+
+### 与 MLP 路线对比（同 E1 超参）
+
+| ID | 编码器 | test AUC | 说明 |
+|----|--------|----------|------|
+| E1 | MLP | 0.7021 | §3.1 MLP 最优 |
+| **F2** | DGCNN | **0.7285** | 同 E1 超参，**+0.026** |
+| F1 | DGCNN | **0.7349** | A 超参，**F 系列最优** |
+
+### 训练过程要点
+
+1. **dev 在 epoch 4 达峰（0.7512）**，高于 F1 全程 dev；但 test 未跟随，说明强正则 + 小模型在该设定下更易 **dev 过拟合**。
+2. **epoch 8 出现 ACC 暴跌（0.439）**，dev LOG_LOSS 升至 1.60，训练不稳定；与 F1 相比 F2 的 dropout=0.4 并未带来更稳的曲线。
+3. **参数量最少（117,297）**，低于 E1 MLP（125,309），DGCNN 替换 MLP 后 EEG 分支更轻，但整体 test 仍不如 F1 的大容量配置。
+4. **仍低于 C（0.759）约 3.0 点**；较 F1 与 C 的差距（2.4 点）略扩大。
+
+### §3.2 F 系列汇总
+
+| ID | test AUC | 相对 F1 | 结论 |
+|----|----------|---------|------|
+| **F1** | **0.7349** | — | **DGCNN 首选配置（A 超参）** |
+| F2 | 0.7285 | −0.006 | E1 超参 + DGCNN 未更优 |
+
+### 产物路径
+
+| 类型 | 路径 |
+|------|------|
+| 日志 | `log/EEG_DGCN_v1CTR/消融F2.txt` |
+| 预测 dev/test | `log/EEG_DGCN_v1CTR/消融F2/rec-EEG_DGCN_v1CTR-{dev,test}.csv` |
+| checkpoint | `model/...__history_eeg_encoder=dgcnn__eeg_dropout=0.4.pt` |
