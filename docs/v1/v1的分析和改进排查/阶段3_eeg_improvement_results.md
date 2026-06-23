@@ -1,6 +1,6 @@
 # 阶段 3 实验记录（§3.0）
 
-> 对应规划：《[具体下一步改进分析规划.md](./具体下一步改进分析规划.md)》§3.0–3.1  
+> 对应规划：《[具体下一步改进分析规划.md](./具体下一步改进分析规划.md)》§3.0–3.2  
 > **主指标：** test AUC（best checkpoint）  
 > **EEG 保留基准 A：** test AUC = **0.667**（Δ 以此为参照）  
 > **记录规则：** 每次跑完填写下表；「刷新最佳」= 在 **use_history_eeg=1** 的实验中超过此前最高 test AUC。
@@ -96,3 +96,41 @@ bash scripts/阶段3_v1保留eeg情况下开发探索/阶段3.1_超参正则保�
 
 - E1 刷新 EEG 保留最佳 → 继续 E2/E3，并行 §3.2  
 - E1 仅略优于 A、仍远低于 C → 不堆超参，转 §3.2 / §3.3 / §3.5  
+
+---
+
+## 六、§3.2 F 系列（历史 step 级 DGCNN 编码）
+
+| ID | 日期 | 脚本 | 相对对照的唯一改动 | best_epoch | dev_AUC | **test_AUC** | Δ vs A | dev-test gap | #params | 刷新最佳 | 备注 |
+|----|------|------|-------------------|------------|---------|--------------|--------|--------------|---------|----------|------|
+| F1 | | `run_stage3_F1_dgcnn_history_eeg.sh` | `--history_eeg_encoder dgcnn`（超参同 A） | | | | | | | | |
+| F2 | | `run_stage3_F2_dgcnn_small_reg.sh` | F1 + E1 超参（emb=32, dropout=0.4, lr=5e-4, l2=1e-4） | | | | | | | | |
+
+**实现说明：**
+
+- 模型参数：`--history_eeg_encoder {mlp,dgcnn}`（默认 `mlp`，与现有实验兼容）
+- DGCNN 将 `history_eeg_310` reshape 为 `[B, L, 62, 5]`，对每个 history step 独立编码
+- 代码：`src/models/general/eeg_dgcnn_encoder.py` + `EEG_DGCN_v1.py`
+- DGCNN 相关参数：`--dgcnn_hidden 32`，`--dgcnn_k 8`
+
+```text
+F1: 同 ablation A 超参 + history_eeg_encoder=dgcnn
+F2: 同 E1 超参 + history_eeg_encoder=dgcnn
+use_history=1, use_history_eeg=1, random_seed=0, main_metric=AUC
+```
+
+### 复现 §3.2 命令
+
+```bash
+cd /root/autodl-tmp/src
+conda activate eeg3104
+
+bash scripts/阶段3_v1保留eeg情况下开发探索/阶段3.2_历史EEG_DGCNN编码/run_stage3_F1_dgcnn_history_eeg.sh
+bash scripts/阶段3_v1保留eeg情况下开发探索/阶段3.2_历史EEG_DGCNN编码/run_stage3_F2_dgcnn_small_reg.sh
+```
+
+### §3.2 判定（填表后对照）
+
+- F1 刷新 EEG 保留最佳 → 将 DGCNN 定为默认 EEG 编码，进入 §3.3 H 系列  
+- F2 > F1 → 采用 F2 配置作为 DGCNN 基线  
+- F1/F2 仍低于 D(0.702) → 检查 DGCNN 容量/正则，或与 §3.3 步内对齐组合（H6）  

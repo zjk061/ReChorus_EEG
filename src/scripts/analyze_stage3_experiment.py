@@ -89,7 +89,12 @@ def main() -> None:
     if args.scan_dir:
         for p in sorted(args.scan_dir.glob("*.txt")):
             name = p.name.lower()
-            if "eeg_dropout" in name or "early_stop" in name or "lr=0.0005" in name:
+            if (
+                "eeg_dropout" in name
+                or "early_stop" in name
+                or "lr=0.0005" in name
+                or "history_eeg_encoder=dgcnn" in name
+            ):
                 paths.append(p)
 
     if not paths:

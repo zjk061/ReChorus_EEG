@@ -4,13 +4,14 @@ import torch
 import torch.nn as nn
 
 from models.BaseContextModel import ContextCTRModel
+from models.general.eeg_dgcnn_encoder import HistoryStepDGCNNEncoder
 
 
 class EEG_DGCN_v1CTR(ContextCTRModel):
 	reader = 'StrictPreCTRReader'
 	runner = 'CTRRunner'
 	extra_log_args = ['emb_size', 'history_max', 'num_heads', 'transformer_layers', 'batch_size',
-					  'use_history', 'use_history_eeg', 'eeg_dropout']
+					  'use_history', 'use_history_eeg', 'history_eeg_encoder', 'eeg_dropout']
 
 	@staticmethod
 	def parse_model_args(parser):
@@ -42,6 +43,13 @@ class EEG_DGCN_v1CTR(ContextCTRModel):
 							help='1: encode history EEG; 0: zero EEG embedding in history steps.')
 		parser.add_argument('--eeg_dropout', type=float, default=None,
 							help='Dropout on history EEG encoder; default uses global --dropout.')
+		parser.add_argument('--history_eeg_encoder', type=str, default='mlp',
+							choices=['mlp', 'dgcnn'],
+							help='History EEG encoder: mlp (flat 310-dim) or dgcnn (62x5 step graph).')
+		parser.add_argument('--dgcnn_hidden', type=int, default=32,
+							help='DGCNN hidden channels when history_eeg_encoder=dgcnn.')
+		parser.add_argument('--dgcnn_k', type=int, default=8,
+							help='DGCNN KNN k when history_eeg_encoder=dgcnn.')
 		return ContextCTRModel.parse_model_args(parser)
 
 	def __init__(self, args, corpus):
@@ -59,8 +67,13 @@ class EEG_DGCN_v1CTR(ContextCTRModel):
 		self.fusion_hidden = args.fusion_hidden
 		self.use_history = args.use_history
 		self.use_history_eeg = args.use_history_eeg
+		self.history_eeg_encoder_type = args.history_eeg_encoder
+		self.dgcnn_hidden = args.dgcnn_hidden
+		self.dgcnn_k = args.dgcnn_k
 		self.eeg_dropout_rate = args.eeg_dropout if args.eeg_dropout is not None else args.dropout
 		self.dropout = args.dropout
+		if self.history_eeg_encoder_type not in ('mlp', 'dgcnn'):
+			raise ValueError('history_eeg_encoder must be mlp or dgcnn.')
 		if self.history_max <= 0:
 			raise ValueError('history_max must be positive for EEG_DGCN_v1CTR.')
 		if self.emb_size % self.num_heads != 0:
@@ -111,12 +124,20 @@ class EEG_DGCN_v1CTR(ContextCTRModel):
 		)
 
 		self.history_label_embedding = nn.Embedding(2, self.history_label_dim)
-		self.history_eeg_encoder = nn.Sequential(
-			nn.LayerNorm(310),
-			nn.Linear(310, self.history_eeg_dim),
-			nn.GELU(),
-			nn.Dropout(self.eeg_dropout_rate)
-		)
+		if self.history_eeg_encoder_type == 'mlp':
+			self.history_eeg_encoder = nn.Sequential(
+				nn.LayerNorm(310),
+				nn.Linear(310, self.history_eeg_dim),
+				nn.GELU(),
+				nn.Dropout(self.eeg_dropout_rate)
+			)
+		else:
+			self.history_eeg_encoder = HistoryStepDGCNNEncoder(
+				out_dim=self.history_eeg_dim,
+				hidden_channels=self.dgcnn_hidden,
+				k=self.dgcnn_k,
+				dropout=self.eeg_dropout_rate,
+			)
 		self.history_emotion_encoder = nn.Sequential(
 			nn.Linear(4, self.history_emotion_dim),
 			nn.GELU(),
