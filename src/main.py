@@ -5,6 +5,7 @@ import sys
 import pickle
 import logging
 import argparse
+import hashlib
 import pandas as pd
 import torch
 
@@ -16,6 +17,32 @@ from models.context import *
 from models.context_seq import *
 from models.reranker import *
 from utils import utils
+
+
+def _should_skip_log_arg(arg, val):
+	if val is None:
+		return True
+	if arg == 'align_loss_weight' and float(val) == 0.0:
+		return True
+	if arg == 'use_history' and int(val) == 1:
+		return True
+	if arg == 'use_history_eeg' and int(val) == 1:
+		return True
+	return False
+
+
+def _build_log_file_name(log_args, max_len=220):
+	name = '__'.join(log_args).replace(' ', '__')
+	if len(name) <= max_len:
+		return name
+	digest = hashlib.sha1(name.encode('utf-8')).hexdigest()[:10]
+	prefix = '__'.join(log_args[:4])
+	suffix = digest
+	keep = max_len - len(prefix) - len(suffix) - 2
+	if keep > 0:
+		middle = name[len(prefix) + 2:len(prefix) + 2 + keep]
+		return '{}__{}__{}'.format(prefix, middle, suffix)
+	return '{}__{}'.format(prefix[:max_len - len(suffix) - 2], suffix)
 
 
 def parse_global_args(parser):
@@ -242,12 +269,12 @@ if __name__ == '__main__':
 	log_args = [init_args.model_name+init_args.model_mode, args.dataset+args.data_appendix, str(args.random_seed)]
 	for arg in ['lr', 'l2'] + model_name.extra_log_args:
 		val = eval('args.' + arg)
-		if val is None:
+		if _should_skip_log_arg(arg, val):
 			continue
 		log_args.append(arg + '=' + str(val))
 	# 使用 __ 作为分隔符，将 log_args 中的所有部分拼接成一个字符串。使用 replace(' ', '__') 将字符串中的空格替换为 __，确保文件名中没有空格。
 	# 生成文件名log_file_name
-	log_file_name = '__'.join(log_args).replace(' ', '__')
+	log_file_name = _build_log_file_name(log_args)
 	# 如果命令行中没传入日志文件和模型文件的保存路径，则根据log_args中的内容和生成的log_file_name动态的生成保存路径和文件名
 	if args.log_file == '':
 		args.log_file = '../log/{}/{}.txt'.format(init_args.model_name+init_args.model_mode, log_file_name)

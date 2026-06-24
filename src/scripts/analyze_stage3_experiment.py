@@ -9,7 +9,7 @@ from pathlib import Path
 
 BASELINE_A_TEST_AUC = 0.667
 # Best test AUC among stage-0-2 runs with use_history_eeg=1 (A=0.667, D=0.702)
-EEG_RETAINING_BEST_REF = 0.7349
+EEG_RETAINING_BEST_REF = 0.7789
 
 METRIC_RE = re.compile(
     r"(?:Dev|Test)\s+After Training:\s*\(ACC@All:[^,]+,AUC@All:([\d.]+),"
