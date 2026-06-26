@@ -94,6 +94,9 @@ def main() -> None:
                 or "early_stop" in name
                 or "lr=0.0005" in name
                 or "history_eeg_encoder=dgcnn" in name
+                or "history_encoder=" in name
+                or "history_pooling=" in name
+                or "eeg_emotion_fusion=bilinear" in name
             ):
                 paths.append(p)
 
