@@ -1030,3 +1030,410 @@ test LOG_LOSS（1.386）明显差于 H5（0.515）与 F1（0.523）。
 
 脚本：`run_stage3_H5_bilinear.sh`
 
+---
+
+## 八、§3.5 I 系列（历史建模架构 ablation，H5 固定底座）
+
+> **对应规划：**《[具体下一步改进分析规划.md](./具体下一步改进分析规划.md)》§3.5  
+> **固定底座：** MLP EEG + bilinear 步内融合 + ablation A 超参（同 H5）  
+> **主对照：** **H5** test AUC = **0.7789**（Δ vs H5 为 I 系列主参照）  
+> **脚本目录：** `src/scripts/阶段3_v1保留eeg情况下开发探索/阶段3.5_历史架构ablation/`
+
+### 实验记录表
+
+| ID | 日期 | 脚本 | 架构改动 | best_epoch | dev_AUC | **test_AUC** | Δ vs H5 | Δ vs A | dev-test gap | #params | 刷新 H5 | 备注 |
+|----|------|------|----------|------------|---------|--------------|---------|--------|--------------|---------|---------|------|
+| I1 | 06-26 | `run_stage3_I1_h5_no_transformer.sh` | `history_encoder=none`，保留 cross-attn | 2 | 0.729 | **0.712** | −0.067 | +0.045 | +0.018 | 271,181 | ❌ | 去掉 Transformer 后 test 明显低于 H5 |
+| I2 | 06-26 | `run_stage3_I2_h5_gru.sh` | `history_encoder=gru`，保留 cross-attn | 1 | 0.735 | **0.760** | −0.019 | +0.093 | −0.024 | 296,141 | ❌ | 逼近 C(0.759)，但仍低于 H5；I 系列次优 |
+| I3 | 06-26 | `run_stage3_I3_h5_mean_pool.sh` | `history_pooling=mean`，保留 Transformer | 3 | 0.739 | **0.705** | −0.074 | +0.038 | +0.034 | 288,013 | ❌ | 去掉 cross-attn 后 test 低于 I1/I2；候选感知池化必要 |
+| I4 | 06-26 | `run_stage3_I4_h5_history20.sh` | `history_max: 50→20` | 1 | 0.752 | **0.764** | −0.015 | +0.097 | −0.013 | 302,733 | ❌ | 缩短历史窗口逼近 H5，I 系列次优（超 I2） |
+| I5 | 06-26 | `run_stage3_I5_h5_heads2.sh` | `num_heads: 4→2`, FFN 128→64 | 4 | 0.751 | **0.693** | −0.086 | +0.026 | +0.058 | 296,397 | ❌ | best epoch 更晚但 dev↑ test↓；压缩 attention 有害 |
+
+### 复现 §3.5 命令
+
+```bash
+cd /root/autodl-tmp/src
+conda activate eeg3104
+
+bash scripts/阶段3_v1保留eeg情况下开发探索/阶段3.5_历史架构ablation/run_stage3_I1_h5_no_transformer.sh
+bash scripts/阶段3_v1保留eeg情况下开发探索/阶段3.5_历史架构ablation/run_stage3_I2_h5_gru.sh
+bash scripts/阶段3_v1保留eeg情况下开发探索/阶段3.5_历史架构ablation/run_stage3_I3_h5_mean_pool.sh
+bash scripts/阶段3_v1保留eeg情况下开发探索/阶段3.5_历史架构ablation/run_stage3_I4_h5_history20.sh
+bash scripts/阶段3_v1保留eeg情况下开发探索/阶段3.5_历史架构ablation/run_stage3_I5_h5_heads2.sh
+```
+
+### §3.5 I1 判定（2026-06-26）
+
+- ❌ **未刷新 H5 / EEG 保留最佳**（test AUC **0.7117**，低于 H5 的 **0.7789**，差 **0.0672**）
+- ✅ **仍优于 baseline A**（+0.0447）：说明在 bilinear 底座下 history 分支仍有增益，但 **Transformer 序列编码不可或缺**
+- ⚠️ **best epoch=2**（晚于 H5 的 epoch 1，但仍很早）：epoch 3 起 dev AUC 持续低于 peak；train loss 继续下降，过拟合模式仍在
+- ⚠️ **dev→test gap +1.8 点**（dev 0.729 > test 0.712）：与 H5（test > dev）相反，泛化弱于 H5
+- **参数量 271,181**（较 H5 304,653 **少 33k**）：去掉 Transformer 后参数更少，但 test **下降 6.7 点**——容量削减在此处以性能为代价
+- **论文结论：** 在 H5 配置下，**历史 Transformer self-attention 有显著正增益**；DIN 式「仅 cross-attn、无序列编码」不足以替代
+
+### §3.5 I1 详细分析（2026-06-26）
+
+**脚本：** `run_stage3_I1_h5_no_transformer.sh`（H5 + `--history_encoder none`）  
+**日志：** `log/EEG_DGCN_v1CTR/...__history_encoder=none__history_po__133f8ecbd3.txt`  
+**环境：** CUDA，`#params=271,181`，训练 **11 epoch** 后早停（best epoch **2**），总耗时约 **2.1 分钟**
+
+#### 最终指标（best checkpoint）
+
+| 指标 | Dev | Test |
+|------|-----|------|
+| **AUC（主）** | **0.7294** | **0.7117** |
+| LOG_LOSS | 0.578 | 0.613 |
+| ACC@0.5 | 0.735 | 0.737 |
+| F1@0.5 | 0.530 | 0.525 |
+
+预测 CSV 复核 AUC 与日志一致（dev 0.7294，test 0.7117）。
+
+#### 阈值扫描（预测 CSV）
+
+| 划分 | n | 正样本率 | pCTR 均值 | AUC | F1@0.5 | best F1 | 最优阈值 |
+|------|---|----------|-----------|-----|--------|---------|----------|
+| dev | 355 | 0.307 | 0.301 | 0.729 | 0.530 | 0.587 | 0.20 |
+| test | 716 | 0.291 | 0.306 | 0.712 | 0.525 | 0.555 | 0.25 |
+
+pCTR 均值（test ≈ 0.31）低于 H5（≈ 0.38），概率整体偏保守。
+
+#### 与 H5 / 关键对照对比
+
+| ID | history_encoder | history_pooling | test AUC | Δ vs H5 | best_epoch | #params |
+|----|-----------------|-----------------|----------|---------|------------|---------|
+| **H5** | transformer | cross_attn | **0.7789** | — | 1 | 304,653 |
+| **I1** | **none** | cross_attn | **0.7117** | **−0.067** | 2 | 271,181 |
+| A | transformer | cross_attn | 0.667 | −0.112 | 3 | 279,933 |
+| B | —（无 history） | — | 0.718 | −0.061 | 3 | 279,933 |
+
+**核心发现：** 仅去掉历史 Transformer、保留候选 cross-attn 与 bilinear 步内融合，test AUC 从 H5 的 **0.779 降至 0.712**（−6.7 点）。说明 H5 的性能不仅来自 bilinear EEG–情绪融合，也依赖 **历史 step 间的 self-attention 上下文建模**。
+
+#### 训练过程要点
+
+1. **epoch 2 达 peak**（dev AUC 0.7294）；epoch 1 dev 0.713，快速提升后 epoch 3 回落至 0.701。
+2. **epoch 3–11 dev AUC 未再超过 0.729**，dev LOG_LOSS 从 0.58 升至 0.87–1.11，典型过拟合；早停正确截断。
+3. **模型结构确认：** 日志中无 `history_sequence_encoder` / Transformer 模块，仅有 `history_cross_attn`——与 I1 设计一致。
+4. **test 低于 H5 但高于 A**：I1（0.712）> A（0.667），说明 bilinear + cross-attn 底座仍有效，但缺少 Transformer 损失约 6.7 点（相对 H5）。
+
+#### 产物路径
+
+| 类型 | 路径 |
+|------|------|
+| 日志 | `log/EEG_DGCN_v1CTR/...__history_encoder=none__history_po__133f8ecbd3.txt` |
+| 归档 | `log/EEG_DGCN_v1CTR/消融I1.txt` |
+| 预测 dev/test | `log/EEG_DGCN_v1CTR/消融I1/rec-EEG_DGCN_v1CTR-{dev,test}.csv` |
+| checkpoint | `model/EEG_DGCN_v1CTR/...__history_encoder=none__history_po__133f8ecbd3.pt` |
+
+**归档：** 已复制至 `log/EEG_DGCN_v1CTR/消融I1.txt` 与 `log/EEG_DGCN_v1CTR/消融I1/`。
+
+### §3.5 I2 判定（2026-06-26）
+
+- ❌ **未刷新 H5 / EEG 保留最佳**（test AUC **0.7595**，低于 H5 的 **0.7789**，差 **0.0194**）
+- ✅ **I 系列当前次优**（高于 I1 的 0.712，+4.8 点）：GRU 序列编码显著优于「无序列编码 + cross-attn」
+- ✅ **显著优于 baseline A**（+0.0925），并**逼近无 EEG 诊断对照 C**（0.759，仅差 **0.0005**）——在**保留 EEG** 前提下达到与 C 几乎相同的 test 排序
+- ⚠️ **best epoch=1**，epoch 2 起 dev AUC 回落（0.735→0.712），与 H5/F1 类似 early peak 模式
+- ✅ **test > dev**（gap **−2.4 点**）：test LOG_LOSS **0.515** 与 H5 相同，校准健康
+- **参数量 296,141**（较 H5 少约 8.5k）：GRU 替代 Transformer 略减参数，但 test 仍低 H5 **1.9 点**
+- **论文结论：** GRU 可作为 Transformer 的**轻量备选**（性能介于 I1 与 H5 之间），但 **H5 的 Transformer 仍是保留 EEG 下的最优序列编码**；GRU 未超越 H5，不宜替换默认配置
+
+### §3.5 I2 详细分析（2026-06-26）
+
+**脚本：** `run_stage3_I2_h5_gru.sh`（H5 + `--history_encoder gru --gru_layers 1`）  
+**日志：** `log/EEG_DGCN_v1CTR/...__history_encoder=gru__history_poo__e7e21dba4a.txt`  
+**环境：** CUDA，`#params=296,141`，训练 **11 epoch** 后早停（best epoch **1**），总耗时约 **2.5 分钟**
+
+#### 最终指标（best checkpoint）
+
+| 指标 | Dev | Test |
+|------|-----|------|
+| **AUC（主）** | **0.7353** | **0.7595** |
+| LOG_LOSS | 0.552 | **0.515** |
+| ACC@0.5 | 0.727 | 0.761 |
+| F1@0.5 | 0.439 | 0.513 |
+
+预测 CSV 复核 AUC 与日志一致（dev 0.7353，test 0.7595）。
+
+#### 阈值扫描（预测 CSV）
+
+| 划分 | n | 正样本率 | pCTR 均值 | AUC | F1@0.5 | best F1 | 最优阈值 |
+|------|---|----------|-----------|-----|--------|---------|----------|
+| dev | 355 | 0.307 | 0.324 | 0.735 | 0.439 | 0.588 | 0.35 |
+| test | 716 | 0.291 | 0.330 | 0.760 | 0.513 | 0.567 | 0.35 |
+
+pCTR 均值（test ≈ 0.33）介于 I1（≈0.31）与 H5（≈0.38）之间。
+
+#### 与 H5 / I1 / 关键对照对比
+
+| ID | history_encoder | test AUC | Δ vs H5 | best_epoch | dev-test gap | #params |
+|----|-----------------|----------|---------|------------|--------------|---------|
+| **H5** | transformer | **0.7789** | — | 1 | −0.017 | 304,653 |
+| **I2** | **gru** | **0.7595** | **−0.019** | 1 | **−0.024** | 296,141 |
+| C | —（无 EEG，诊断） | 0.759 | −0.020 | 1 | ~0 | 279,933 |
+| H2 | transformer + cross_attn 融合 | 0.7527 | −0.026 | 1 | −0.017 | 283,741 |
+| **I1** | none | 0.7117 | −0.067 | 2 | +0.018 | 271,181 |
+| A | transformer + concat 融合 | 0.667 | −0.112 | 3 | +0.068 | 279,933 |
+
+**核心发现：** 用单层 GRU 替换 Transformer 后，test AUC 达 **0.760**，为 I 系列最高，且与无 EEG 对照 C **几乎持平**（保留 EEG 下复现 C 水平）。但仍比 H5 低 **1.9 点**，说明 **self-attention 序列建模仍优于 GRU**（在本数据集规模下）。
+
+#### I1 vs I2 vs H5（同为 bilinear + cross-attn 池化）
+
+| 项 | H5（Transformer） | I2（GRU） | I1（none） |
+|----|-------------------|-----------|------------|
+| 序列编码 | TransformerEncoder | GRU(64) | 无 |
+| test AUC | **0.7789** | 0.7595 | 0.7117 |
+| test LOG_LOSS | **0.515** | **0.515** | 0.613 |
+| #params | 304,653 | 296,141 | 271,181 |
+
+序列编码从 none → GRU → Transformer，test AUC 单调上升（0.712 → 0.760 → 0.779），验证 **历史 step 间上下文建模** 是 H5 性能的重要组成部分。
+
+#### 训练过程要点
+
+1. **epoch 1 即 peak**（dev AUC 0.7353）；epoch 2 dev 降至 0.712，之后 dev LOG_LOSS 持续升高（0.55 → 0.89–1.04）。
+2. **test 优于 dev**（0.760 vs 0.735）：与 H5 相同模式，dev 355 条方差大。
+3. **结构确认：** 日志含 `history_sequence_encoder: GRU(64, 64)` + `history_cross_attn`，无 Transformer。
+4. **epoch 1 F1@0.5 偏低（0.439）**：固定阈值下 F1 不可靠；AUC / best F1@0.35 更健康。
+
+#### 产物路径
+
+| 类型 | 路径 |
+|------|------|
+| 日志 | `log/EEG_DGCN_v1CTR/...__history_encoder=gru__history_poo__e7e21dba4a.txt` |
+| 归档 | `log/EEG_DGCN_v1CTR/消融I2.txt` |
+| 预测 dev/test | `log/EEG_DGCN_v1CTR/消融I2/rec-EEG_DGCN_v1CTR-{dev,test}.csv` |
+| checkpoint | `model/EEG_DGCN_v1CTR/...__history_encoder=gru__history_poo__e7e21dba4a.pt` |
+
+**归档：** 已复制至 `log/EEG_DGCN_v1CTR/消融I2.txt` 与 `log/EEG_DGCN_v1CTR/消融I2/`。
+
+### §3.5 I3 判定（2026-06-26）
+
+- ❌ **未刷新 H5 / EEG 保留最佳**（test AUC **0.7045**，低于 H5 的 **0.7789**，差 **0.0744**）
+- ❌ **低于 I1（0.712）与 I2（0.760）**：在保留 Transformer 的情况下去掉候选 cross-attn，test 反而不如「无序列编码 + cross-attn」的 I1
+- ✅ **仍优于 baseline A**（+0.0375），history + bilinear 底座仍有基础增益
+- ⚠️ **best epoch=3**（I 系列最晚）：dev AUC 在 epoch 3 达 0.739 后未再刷新，但 test 未跟随（dev→test gap **+3.4 点**）
+- ⚠️ **dev 虚高、test 回落**：典型「mean pool 丢失候选匹配信号」——历史表示对所有候选 item 相同，推荐归纳偏置减弱
+- **参数量 288,013**（较 H5 304,653 **少 16.6k**，无 `history_cross_attn`）：参数更少但 test **低 7.4 点**
+- **论文结论：** **候选 item 感知的 cross-attention 是 H5 架构的关键组件**；masked mean pool 无法替代，且劣于 DIN 式 cross-attn（I1）
+
+### §3.5 I3 详细分析（2026-06-26）
+
+**脚本：** `run_stage3_I3_h5_mean_pool.sh`（H5 + `--history_pooling mean`）  
+**日志：** `log/EEG_DGCN_v1CTR/...__history_encoder=transformer__his__4561564346.txt`  
+**环境：** CUDA，`#params=288,013`，训练 **12 epoch** 后早停（best epoch **3**），总耗时约 **2.4 分钟**
+
+#### 最终指标（best checkpoint）
+
+| 指标 | Dev | Test |
+|------|-----|------|
+| **AUC（主）** | **0.7388** | **0.7045** |
+| LOG_LOSS | 0.772 | 0.835 |
+| ACC@0.5 | 0.707 | 0.683 |
+| F1@0.5 | 0.581 | 0.538 |
+
+预测 CSV 复核 AUC 与日志一致（dev 0.7388，test 0.7045）。
+
+#### 阈值扫描（预测 CSV）
+
+| 划分 | n | 正样本率 | pCTR 均值 | AUC | F1@0.5 | best F1 | 最优阈值 |
+|------|---|----------|-----------|-----|--------|---------|----------|
+| dev | 355 | 0.307 | 0.483 | 0.739 | 0.581 | 0.598 | 0.30 |
+| test | 716 | 0.291 | 0.487 | 0.705 | 0.538 | 0.544 | 0.65 |
+
+pCTR 均值（test ≈ 0.49）**高于 H5（≈0.38）**，整体预测偏乐观；test 最优 F1 阈值 **0.65**，与 H5/I2（≈0.35）差异大，说明 mean pool 改变了分数分布。
+
+#### 与 H5 / I1 / I2 对比（池化方式 ablation）
+
+| ID | 序列编码 | 历史池化 | test AUC | Δ vs H5 | dev-test gap | #params |
+|----|----------|----------|----------|---------|--------------|---------|
+| **H5** | Transformer | **cross-attn** | **0.7789** | — | −0.017 | 304,653 |
+| I2 | GRU | cross-attn | 0.7595 | −0.019 | −0.024 | 296,141 |
+| I1 | none | cross-attn | 0.7117 | −0.067 | +0.018 | 271,181 |
+| **I3** | Transformer | **mean** | **0.7045** | **−0.074** | **+0.034** | 288,013 |
+
+**核心发现：** I3 保留 Transformer 但用 mean pool 替代 cross-attn，test AUC **0.705**，不仅远低于 H5（−7.4 点），还**低于无 Transformer 的 I1（0.712）**。说明在 bilinear 底座上，**「候选感知的历史选择」比「历史 step 间 self-attention」更关键**——cross-attn 提供推荐任务必需的 item-specific 历史表示，mean pool 将其压缩为对所有候选相同的向量。
+
+#### 训练过程要点
+
+1. **epoch 1–3 dev AUC 逐步上升**（0.722 → 0.728 → **0.739**），best 出现在 epoch 3（I 系列唯一 epoch 3 peak）。
+2. **epoch 4 起 dev 未再超 0.739**，但 train loss 继续下降（0.59 → 0.13）；epoch 11 dev AUC 跌至 0.685。
+3. **结构确认：** 日志含 `history_sequence_encoder: TransformerEncoder`，**无** `history_cross_attn`——与 I3 设计一致。
+4. **test LOG_LOSS 0.835** 差于 H5/I2（0.515），排序与校准同步恶化。
+
+#### 产物路径
+
+| 类型 | 路径 |
+|------|------|
+| 日志 | `log/EEG_DGCN_v1CTR/...__history_encoder=transformer__his__4561564346.txt` |
+| 归档 | `log/EEG_DGCN_v1CTR/消融I3.txt` |
+| 预测 dev/test | `log/EEG_DGCN_v1CTR/消融I3/rec-EEG_DGCN_v1CTR-{dev,test}.csv` |
+| checkpoint | `model/EEG_DGCN_v1CTR/...__history_encoder=transformer__his__4561564346.pt` |
+
+**归档：** 已复制至 `log/EEG_DGCN_v1CTR/消融I3.txt` 与 `log/EEG_DGCN_v1CTR/消融I3/`。
+
+#### §3.5 I 系列阶段性排序（I1–I4 已完成，I5 见文末最终结论）
+
+| 排名 | ID | 架构改动 | test AUC | 相对 H5 |
+|------|-----|----------|----------|---------|
+| — | **H5** | history_max=50, Transformer + cross-attn | **0.779** | 基准 |
+| 1 | **I4** | history_max=**20**, Transformer + cross-attn | **0.764** | −0.015 |
+| 2 | I2 | GRU + cross-attn | 0.760 | −0.019 |
+| 3 | I1 | none + cross-attn | 0.712 | −0.067 |
+| 4 | I3 | Transformer + mean pool | 0.705 | −0.074 |
+
+**I 系列初步结论（编码 × 池化 × 历史长度）：**
+
+- **池化：** cross-attn **必要**（I3 证伪 mean pool）
+- **序列编码：** Transformer **最优**（H5 > I4 ≈ I2 > I1）
+- **历史长度：** `history_max=20` 略逊于 50（I4 0.764 vs H5 0.779，差 1.5 点），但 **优于 I2**；缩短窗口未带来预期的稳定性增益，也未刷新 H5
+
+### §3.5 I4 判定（2026-06-26）
+
+- ❌ **未刷新 H5 / EEG 保留最佳**（test AUC **0.7642**，低于 H5 的 **0.7789**，差 **0.0147**）
+- ✅ **I 系列当前次优**（高于 I2 的 0.760，+0.0047；高于 I1/I3）
+- ✅ **显著优于 baseline A**（+0.0972），并**超过无 EEG 对照 C**（0.759，+0.0052）——在保留 EEG 且完整 H5 架构下，缩短历史仍达 C 以上
+- ⚠️ **best epoch=1**（与 H5/I2 相同 early peak）；epoch 2 dev AUC 骤降至 0.716，之后未恢复
+- ✅ **test > dev**（gap **−1.3 点**）；test LOG_LOSS **0.516** 与 H5（0.515）几乎相同
+- **参数量 302,733**（较 H5 304,653 略少，position embedding 20 vs 50）
+- **论文结论：** 最近 **20 条**历史已能捕获大部分增益；更长窗口（50）仍有 **~1.5 点** test 优势，**H5 默认 history_max=50 仍合理**；I4 可作为略轻量的备选配置
+
+### §3.5 I4 详细分析（2026-06-26）
+
+**脚本：** `run_stage3_I4_h5_history20.sh`（H5 + `--history_max 20`）  
+**日志：** `log/EEG_DGCN_v1CTR/...__history_max=20__...__history_encoder=transformer__his__8f8f45eeee.txt`  
+**环境：** CUDA，`#params=302,733`，训练 **11 epoch** 后早停（best epoch **1**），总耗时约 **2.2 分钟**
+
+#### 最终指标（best checkpoint）
+
+| 指标 | Dev | Test |
+|------|-----|------|
+| **AUC（主）** | **0.7515** | **0.7642** |
+| LOG_LOSS | 0.536 | **0.516** |
+| ACC@0.5 | 0.730 | 0.751 |
+| F1@0.5 | 0.515 | 0.557 |
+
+预测 CSV 复核 AUC 与日志一致（dev 0.7515，test 0.7642）。
+
+#### 阈值扫描（预测 CSV）
+
+| 划分 | n | 正样本率 | pCTR 均值 | AUC | F1@0.5 | best F1 | 最优阈值 |
+|------|---|----------|-----------|-----|--------|---------|----------|
+| dev | 355 | 0.307 | 0.347 | 0.752 | 0.515 | 0.604 | 0.40 |
+| test | 716 | 0.291 | 0.347 | 0.764 | 0.557 | 0.589 | 0.40 |
+
+pCTR 均值（test ≈ 0.35）略低于 H5（≈0.38），校准与 H5 接近（LOG_LOSS 0.516 vs 0.515）。
+
+#### 与 H5 / I2 对比（历史长度 ablation）
+
+| ID | history_max | test AUC | Δ vs H5 | best_epoch | dev-test gap | #params |
+|----|-------------|----------|---------|------------|--------------|---------|
+| **H5** | **50** | **0.7789** | — | 1 | −0.017 | 304,653 |
+| **I4** | **20** | **0.7642** | **−0.015** | 1 | −0.013 | 302,733 |
+| I2 | 50 + GRU | 0.7595 | −0.019 | 1 | −0.024 | 296,141 |
+| C | 50, 无 EEG | 0.759 | −0.020 | 1 | ~0 | 279,933 |
+
+**核心发现：** 将历史截断从 50 降至 20，test AUC 仅损失 **1.5 点**，且 **I4（0.764）> I2（0.760）> C（0.759）**。说明在本数据集上，**最近 20 步历史已包含绝大部分有效信号**；更长窗口带来边际增益，但不足以单独解释 H5 相对 C 的全部优势（步内 bilinear 融合仍是主因）。
+
+#### 训练过程要点
+
+1. **epoch 1 即 peak**（dev AUC 0.7515）；epoch 2 dev 降至 0.716，与 H5/I2 相同 early peak 模式。
+2. **epoch 7–9 dev LOG_LOSS 异常升高**（最高 1.86），dev ACC 低至 0.57，训练曲线波动大于 H5。
+3. **结构确认：** `position_embedding: Embedding(20, 64)` + Transformer + cross-attn，与 H5 一致仅历史长度不同。
+4. **未改善 best epoch 问题**：I4 目标之一是缓解 early peak，但 best 仍在 epoch 1。
+
+#### 产物路径
+
+| 类型 | 路径 |
+|------|------|
+| 日志 | `log/EEG_DGCN_v1CTR/...__history_max=20__...__8f8f45eeee.txt` |
+| 归档 | `log/EEG_DGCN_v1CTR/消融I4.txt` |
+| 预测 dev/test | `log/EEG_DGCN_v1CTR/消融I4/rec-EEG_DGCN_v1CTR-{dev,test}.csv` |
+| checkpoint | `model/EEG_DGCN_v1CTR/...__history_max=20__...__8f8f45eeee.pt` |
+
+**归档：** 已复制至 `log/EEG_DGCN_v1CTR/消融I4.txt` 与 `log/EEG_DGCN_v1CTR/消融I4/`。
+
+### §3.5 I5 判定（2026-06-26）
+
+- ❌ **未刷新 H5 / EEG 保留最佳**（test AUC **0.6933**，低于 H5 的 **0.7789**，差 **0.0856**）
+- ❌ **I 系列表现最差之一**（仅略高于 I3 的 0.705；低于 I1 的 0.712）
+- ⚠️ **dev 虚高、test 大幅回落：** dev AUC **0.7511**（接近 I4/H5 水平），但 test 仅 0.693；dev→test gap **+5.8 点**（E3/H4 式失败模式）
+- ⚠️ **best epoch=4**（I 系列最晚之一，仅次于 I3 的 epoch 3）：attention 容量压缩使 peak 推迟，但**未带来 test 增益**
+- **参数量 296,397**（较 H5 304,653 少 8.3k）：减参数 + 减 heads/FFN **显著伤害 test**
+- **论文结论：** H5 默认 **`num_heads=4` + FFN=128** 不宜缩减；「缩小 attention 缓解过拟合」在本设定下**不成立**（同 E3/H4/I5 教训：**不得为 dev 好看牺牲 test**）
+
+### §3.5 I5 详细分析（2026-06-26）
+
+**脚本：** `run_stage3_I5_h5_heads2.sh`（H5 + `--num_heads 2 --transformer_ffn_dim 64`）  
+**日志：** `log/EEG_DGCN_v1CTR/...__num_heads=2__...__history_encoder=transformer__his__f5fab28777.txt`  
+**环境：** CUDA，`#params=296,397`，训练 **13 epoch** 后早停（best epoch **4**），总耗时约 **2.4 分钟**
+
+#### 最终指标（best checkpoint）
+
+| 指标 | Dev | Test |
+|------|-----|------|
+| **AUC（主）** | **0.7511** | **0.6933** |
+| LOG_LOSS | 0.631 | 0.724 |
+| ACC@0.5 | 0.721 | 0.711 |
+| F1@0.5 | 0.344 | 0.289 |
+
+预测 CSV 复核 AUC 与日志一致（dev 0.7511，test 0.6933）。
+
+#### 阈值扫描（预测 CSV）
+
+| 划分 | n | 正样本率 | pCTR 均值 | AUC | F1@0.5 | best F1 | 最优阈值 |
+|------|---|----------|-----------|-----|--------|---------|----------|
+| dev | 355 | 0.307 | 0.219 | 0.751 | 0.344 | 0.583 | 0.15 |
+| test | 716 | 0.291 | 0.226 | 0.693 | 0.289 | 0.524 | 0.15 |
+
+pCTR 均值（test ≈ 0.23）**显著低于 H5（≈0.38）**，回到 baseline A 式保守预测；F1@0.5 低主要因阈值问题，但 test AUC 本身已差。
+
+#### 与 H5 / I4 对比（attention 容量 ablation）
+
+| ID | num_heads | FFN dim | test AUC | Δ vs H5 | best_epoch | dev-test gap | #params |
+|----|-----------|---------|----------|---------|------------|--------------|---------|
+| **H5** | **4** | **128** | **0.7789** | — | 1 | −0.017 | 304,653 |
+| I4 | 4 | 128 | 0.7642 | −0.015 | 1 | −0.013 | 302,733 |
+| **I5** | **2** | **64** | **0.6933** | **−0.086** | **4** | **+0.058** | 296,397 |
+
+**核心发现：** 将 Transformer/cross-attn 的 heads 从 4 降至 2、FFN 从 128 降至 64，test AUC **暴跌 8.6 点**（相对 H5），且 **不如 I4 仅缩短 history**（−1.5 点）。说明 H5 的历史 attention **需要足够容量**；过度压缩导致 dev 上 epoch 4 的 0.751 无法迁移到 test。
+
+#### 训练过程要点
+
+1. **epoch 1 dev AUC 0.746**，epoch 4 刷新至 **0.751**（best）；epoch 2–3 曾跌至 0.677–0.713，曲线比 H5 更不稳定。
+2. **epoch 4 后 dev 未再超 0.751**，train loss 继续下降；epoch 6 dev LOG_LOSS 升至 1.30。
+3. **结构确认：** Transformer `linear1: 64→64`（H5 为 64→128），cross-attn `num_heads=2`。
+4. **I5 反例：** best epoch 从 1 推迟到 4，但 test 从 H5 的 0.779 跌至 0.693——**更晚的 dev peak ≠ 更好泛化**。
+
+#### 产物路径
+
+| 类型 | 路径 |
+|------|------|
+| 日志 | `log/EEG_DGCN_v1CTR/...__num_heads=2__...__f5fab28777.txt` |
+| 归档 | `log/EEG_DGCN_v1CTR/消融I5.txt` |
+| 预测 dev/test | `log/EEG_DGCN_v1CTR/消融I5/rec-EEG_DGCN_v1CTR-{dev,test}.csv` |
+| checkpoint | `model/EEG_DGCN_v1CTR/...__num_heads=2__...__f5fab28777.pt` |
+
+**归档：** 已复制至 `log/EEG_DGCN_v1CTR/消融I5.txt` 与 `log/EEG_DGCN_v1CTR/消融I5/`。
+
+---
+
+### §3.5 I 系列最终结论（I1–I5 全部完成，2026-06-26）
+
+#### 最终排序（test AUC）
+
+| 排名 | ID | 改动摘要 | test AUC | 相对 H5 |
+|------|-----|----------|----------|---------|
+| — | **H5** | 默认：Transformer(4h, FFN128) + cross-attn(4h), max=50 | **0.779** | 基准 |
+| 1 | **I4** | history_max=20 | **0.764** | −0.015 |
+| 2 | I2 | GRU 替代 Transformer | 0.760 | −0.019 |
+| 3 | I1 | 无序列编码 + cross-attn | 0.712 | −0.067 |
+| 4 | I3 | mean pool 替代 cross-attn | 0.705 | −0.074 |
+| 5 | **I5** | num_heads=2, FFN=64 | **0.693** | −0.086 |
+
+#### 四条可写入论文的结论
+
+1. **步内 bilinear 融合 + 完整双层 attention（H5）为最优组合**；I 系列无一超越 H5。
+2. **候选 cross-attn 必要**（I3：0.705）；**Transformer 序列编码必要且优于 GRU**（H5 > I4 > I2 > I1）。
+3. **history_max=50 略优于 20**（I4 仅 −1.5 点），20 可作轻量备选。
+4. **不宜为减过拟合压缩 attention 容量**（I5：dev 0.751 / test 0.693）；H5 默认 `num_heads=4`、FFN=128 应保留。
+
+**§3.5 状态：** I1–I5 实验 ✅ 完成；I6（待定）未跑。下一步建议转 **阶段 5（H5 超参网格）** 或 **§3.6 J 系列**。
+

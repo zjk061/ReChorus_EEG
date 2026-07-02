@@ -13,7 +13,8 @@ class EEG_DGCN_v1CTR(ContextCTRModel):
 	runner = 'CTRRunner'
 	extra_log_args = ['emb_size', 'history_max', 'num_heads', 'batch_size',
 					  'use_history', 'use_history_eeg', 'history_eeg_encoder', 'eeg_dropout',
-					  'eeg_emotion_fusion', 'align_loss_weight']
+					  'eeg_emotion_fusion', 'align_loss_weight',
+					  'history_encoder', 'history_pooling', 'transformer_ffn_dim', 'gru_layers']
 
 	@staticmethod
 	def parse_model_args(parser):
@@ -25,6 +26,16 @@ class EEG_DGCN_v1CTR(ContextCTRModel):
 							help='Number of attention heads for history modeling.')
 		parser.add_argument('--transformer_layers', type=int, default=1,
 							help='Number of TransformerEncoder layers for history sequence.')
+		parser.add_argument('--history_encoder', type=str, default='transformer',
+							choices=['transformer', 'gru', 'none'],
+							help='History sequence encoder: transformer (default), gru (I2), or none (I1).')
+		parser.add_argument('--history_pooling', type=str, default='cross_attn',
+							choices=['cross_attn', 'mean'],
+							help='History pooling: candidate cross-attn (default) or masked mean (I3).')
+		parser.add_argument('--transformer_ffn_dim', type=int, default=0,
+							help='Transformer FFN hidden dim; 0 uses emb_size*2 (I5 may shrink).')
+		parser.add_argument('--gru_layers', type=int, default=1,
+							help='GRU layers when history_encoder=gru (I2).')
 		parser.add_argument('--history_eeg_dim', type=int, default=32,
 							help='Embedding size for each historical EEG vector.')
 		parser.add_argument('--history_emotion_dim', type=int, default=16,
@@ -69,6 +80,12 @@ class EEG_DGCN_v1CTR(ContextCTRModel):
 		self.history_max = args.history_max
 		self.num_heads = args.num_heads
 		self.transformer_layers = args.transformer_layers
+		self.history_encoder_type = args.history_encoder
+		self.history_pooling_mode = args.history_pooling
+		self.transformer_ffn_dim = (
+			args.transformer_ffn_dim if args.transformer_ffn_dim > 0 else self.emb_size * 2
+		)
+		self.gru_layers = args.gru_layers
 		self.history_eeg_dim = args.history_eeg_dim
 		self.history_emotion_dim = args.history_emotion_dim
 		self.history_label_dim = args.history_label_dim
@@ -96,6 +113,12 @@ class EEG_DGCN_v1CTR(ContextCTRModel):
 		if self.eeg_emotion_fusion_mode in ('cross_attn', 'co_attn', 'residual'):
 			if self.eeg_emo_align_dim % self.num_heads != 0:
 				raise ValueError('eeg_emo_align_dim must be divisible by num_heads for attention fusion.')
+		if self.history_encoder_type not in ('transformer', 'gru', 'none'):
+			raise ValueError('history_encoder must be transformer, gru, or none.')
+		if self.history_pooling_mode not in ('cross_attn', 'mean'):
+			raise ValueError('history_pooling must be cross_attn or mean.')
+		if self.history_encoder_type == 'gru' and self.gru_layers < 1:
+			raise ValueError('gru_layers must be positive when history_encoder=gru.')
 
 		self.user_cont_features = [f for f in ['u_age_f', 'u_usage_f'] if f in corpus.user_feature_names]
 		self.item_meta_features = list(corpus.item_feature_names)
@@ -187,24 +210,38 @@ class EEG_DGCN_v1CTR(ContextCTRModel):
 			nn.LayerNorm(self.emb_size)
 		)
 		self.position_embedding = nn.Embedding(max(self.history_max, 1), self.emb_size)
-		encoder_layer = nn.TransformerEncoderLayer(
-			d_model=self.emb_size,
-			nhead=self.num_heads,
-			dim_feedforward=self.emb_size * 2,
-			dropout=self.dropout,
-			activation='gelu',
-			batch_first=True
-		)
-		self.history_transformer = nn.TransformerEncoder(
-			encoder_layer,
-			num_layers=self.transformer_layers
-		)
-		self.history_cross_attn = nn.MultiheadAttention(
-			embed_dim=self.emb_size,
-			num_heads=self.num_heads,
-			dropout=self.dropout,
-			batch_first=True
-		)
+		if self.history_encoder_type == 'transformer':
+			encoder_layer = nn.TransformerEncoderLayer(
+				d_model=self.emb_size,
+				nhead=self.num_heads,
+				dim_feedforward=self.transformer_ffn_dim,
+				dropout=self.dropout,
+				activation='gelu',
+				batch_first=True
+			)
+			self.history_sequence_encoder = nn.TransformerEncoder(
+				encoder_layer,
+				num_layers=self.transformer_layers
+			)
+		elif self.history_encoder_type == 'gru':
+			self.history_sequence_encoder = nn.GRU(
+				input_size=self.emb_size,
+				hidden_size=self.emb_size,
+				num_layers=self.gru_layers,
+				batch_first=True,
+				dropout=self.dropout if self.gru_layers > 1 else 0.0,
+			)
+		else:
+			self.history_sequence_encoder = None
+		if self.history_pooling_mode == 'cross_attn':
+			self.history_cross_attn = nn.MultiheadAttention(
+				embed_dim=self.emb_size,
+				num_heads=self.num_heads,
+				dropout=self.dropout,
+				batch_first=True
+			)
+		else:
+			self.history_cross_attn = None
 		self.fusion_mlp = nn.Sequential(
 			nn.Linear(self.emb_size * 3, self.fusion_hidden),
 			nn.GELU(),
@@ -332,17 +369,42 @@ class EEG_DGCN_v1CTR(ContextCTRModel):
 			history_multimodal_emb
 		], dim=-1))
 		step_emb = step_emb + self.position_embedding(positions.clamp(max=self.history_max - 1))
-		history_context = self.history_transformer(step_emb, src_key_padding_mask=mask)
-		query = candidate_item_repr.unsqueeze(1)
-		candidate_history, _ = self.history_cross_attn(
-			query,
-			history_context,
-			history_context,
-			key_padding_mask=mask
-		)
-		candidate_history = candidate_history.squeeze(1)
+		history_context = self._encode_history_sequence(step_emb, mask, lengths)
+		candidate_history = self._pool_history(history_context, mask, candidate_item_repr)
 		history_repr = candidate_history * non_empty.float().unsqueeze(-1)
 		return history_repr, align_loss
+
+	def _encode_history_sequence(self, step_emb, mask, lengths):
+		if self.history_encoder_type == 'transformer':
+			return self.history_sequence_encoder(step_emb, src_key_padding_mask=mask)
+		if self.history_encoder_type == 'gru':
+			seq_len = step_emb.shape[1]
+			lengths_cpu = lengths.clamp(min=1).detach().cpu()
+			packed = nn.utils.rnn.pack_padded_sequence(
+				step_emb, lengths_cpu, batch_first=True, enforce_sorted=False
+			)
+			packed_out, _ = self.history_sequence_encoder(packed)
+			history_context, _ = nn.utils.rnn.pad_packed_sequence(
+				packed_out, batch_first=True, total_length=seq_len
+			)
+			valid = (~mask).unsqueeze(-1).float()
+			return history_context * valid
+		return step_emb
+
+	def _pool_history(self, history_context, mask, candidate_item_repr):
+		if self.history_pooling_mode == 'cross_attn':
+			query = candidate_item_repr.unsqueeze(1)
+			candidate_history, _ = self.history_cross_attn(
+				query,
+				history_context,
+				history_context,
+				key_padding_mask=mask
+			)
+			return candidate_history.squeeze(1)
+		valid = (~mask).float().unsqueeze(-1)
+		summed = (history_context * valid).sum(dim=1)
+		counts = valid.sum(dim=1).clamp(min=1.0)
+		return summed / counts
 
 	def loss(self, out_dict):
 		loss = super().loss(out_dict)
