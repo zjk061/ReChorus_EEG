@@ -1,0 +1,39 @@
+{
+  "selection_dataset": "dev only; v2_locked_legacy_test discarded before feature construction and not evaluated",
+  "best_simple_baseline": "LR-content-only",
+  "best_non_eeg_deep_baseline": "DeepFM",
+  "global_auc_ranking": [
+    "LR-all",
+    "HistGBDT",
+    "LR-history-only",
+    "DIN-noEEG",
+    "user-context-bias",
+    "FM",
+    "DeepFM",
+    "LR-user-only",
+    "user-bias",
+    "user-rate",
+    "DCNv2",
+    "TimeAwareGRU-noEEG",
+    "LR-content-only",
+    "global-rate"
+  ],
+  "gauc_ranking": [
+    "LR-content-only",
+    "DeepFM",
+    "TimeAwareGRU-noEEG",
+    "HistGBDT",
+    "DCNv2",
+    "FM",
+    "DIN-noEEG",
+    "user-context-bias",
+    "global-rate",
+    "user-rate",
+    "user-bias",
+    "LR-user-only",
+    "LR-all",
+    "LR-history-only"
+  ],
+  "ranking_conflict": true,
+  "bootstrap_definition": "95% user-cluster CI on the five-seed mean prediction"
+}
