@@ -27,6 +27,8 @@ class BaseReader(object):
         self.sep = args.sep
         self.prefix = args.path
         self.dataset = args.dataset
+        self.eval_test = bool(getattr(args, 'eval_test', 0))
+        self.phases = ['train', 'dev'] + (['test'] if self.eval_test else [])
         # 这个函数中也定义了若干该类的变量。
         # 其中的关键就是定义了self.data_df字典。里面包含了三个阶段的数据集的DataFrame
         self._read_data()
@@ -44,7 +46,7 @@ class BaseReader(object):
         self.train_clicked_set和self.residual_clicked_set这两个玩意存的是为了Topk任务服务的。里面默认数据集DataFrame里出现的全是用户和物品确实
         发生了交互的情况数据。不存在CTR版数据集里面的label=0这样的未发生交互还把这一对用户物品数据样本存里面的情况
         """
-        for key in ['train', 'dev', 'test']:
+        for key in self.phases:
             df = self.data_df[key]
             # 只要出现了的item_id，一律认为是用户发生了交互的物品数据样本，需要存到set中去。
             for uid, iid, lbl in zip(df['user_id'], df['item_id'], df['label']):
@@ -71,7 +73,7 @@ class BaseReader(object):
         从原始的三个.csv文件中读出数据后，
         reader类对象corpus的data_df字典变量中最终存储了三类数据集的DataFrame数据，并按照user_id和time这两列进行了升序排序
         """
-        for key in ['train', 'dev', 'test']:
+        for key in self.phases:
             # 从指定路径的.csv文件中读出数据存为DataFrame,抛弃原来的索引，并按user_id和time这两列进行排序
             self.data_df[key] = pd.read_csv(os.path.join(self.prefix, self.dataset, key + '.csv'), sep=self.sep).reset_index(drop=True).sort_values(by = ['user_id','time'])
             # 下面这行是我一开始弄FM模型时加上的。为了解决有NAN空值的报错。
@@ -88,12 +90,12 @@ class BaseReader(object):
         if 'label' in self.data_df['train'].columns: # Add label for CTR prediction
             key_columns.append('label')
         # 将御三家合并起来进行信息统计
-        self.all_df = pd.concat([self.data_df[key][key_columns] for key in ['train', 'dev', 'test']])
+        self.all_df = pd.concat([self.data_df[key][key_columns] for key in self.phases])
         # 读取器对象的用户数量和物品数量是按照对应id的最大值来确定的。
         self.n_users, self.n_items = self.all_df['user_id'].max() + 1, self.all_df['item_id'].max() + 1
         # 如果在验证集和测试集中出现了负样本这一列的话，要保证负样本列中的item_id不能比n_items（最大的item_id）还要大（没见过）
         # 但实际上我现在都觉得不需要在数据集中真弄个neg_items列数据
-        for key in ['dev', 'test']:
+        for key in [phase for phase in ('dev', 'test') if phase in self.data_df]:
             if 'neg_items' in self.data_df[key]:
                 neg_items = np.array(self.data_df[key]['neg_items'].tolist())
                 assert (neg_items >= self.n_items).sum() == 0  # assert negative items don't include unseen ones

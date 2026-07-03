@@ -85,7 +85,10 @@ def main():
 	# Read data 不同模型的reader种类和是否有data_appendix情况下对应的不同数据集存储为pickle形式的.pkl文件。路径位于对应名字的数据集文件夹下
 	# 名称为某某reader.pkl。在代码中，需要用的数据集数据对应的变量即为corpus
 	# pickle.load()返回的数据类型跟打包进.pkl文件的原来的数据内容一样
-	corpus_path = os.path.join(args.path, args.dataset, model_name.reader+args.data_appendix+ '.pkl')
+	# A dev-only corpus has a distinct cache key so a legacy pickle containing
+	# locked-test rows can never be loaded by an --eval_test=0 run.
+	corpus_scope = '' if args.eval_test else '__no_test'
+	corpus_path = os.path.join(args.path, args.dataset, model_name.reader + args.data_appendix + corpus_scope + '.pkl')
 	if not args.regenerate and os.path.exists(corpus_path): #如果不需要生成中间文件且数据pkl文件已经存在
 		logging.info('Load corpus from {}'.format(corpus_path))
 		corpus = pickle.load(open(corpus_path, 'rb'))
@@ -108,7 +111,8 @@ def main():
 	# 利用Dataset类的prepare方法Dataset类对象做某些处理
 	# Dataset类属于model_name所属模型类手下。
 	data_dict = dict()
-	for phase in ['train', 'dev', 'test']:
+	phases = ['train', 'dev'] + (['test'] if args.eval_test else [])
+	for phase in phases:
 		data_dict[phase] = model_name.Dataset(model, corpus, phase)
 		data_dict[phase].prepare()
 
@@ -117,7 +121,10 @@ def main():
 	# 如果不载入模型的话那就开始训练了
 	# 注意runner所用的print_res方法，疑似能将模型在指定数据集上跑一遍并把结果返回
 	runner = runner_name(args)
-	logging.info('Test Before Training: ' + runner.print_res(data_dict['test']))
+	if args.eval_test:
+		logging.info('Test Before Training: ' + runner.print_res(data_dict['test']))
+	else:
+		logging.info('Test split is locked: --eval_test=0; it was not constructed or evaluated.')
 	if args.load > 0:
 		model.load_model()
 	if args.train > 0:
@@ -130,11 +137,13 @@ def main():
 	# 注：推荐任务的结果不等于模型的性能评判指标数值。结果指的是第一手的模型输出的预测内容
 	eval_res = runner.print_res(data_dict['dev'])
 	logging.info(os.linesep + 'Dev  After Training: ' + eval_res)
-	eval_res = runner.print_res(data_dict['test'])
-	logging.info(os.linesep + 'Test After Training: ' + eval_res)
+	if args.eval_test:
+		eval_res = runner.print_res(data_dict['test'])
+		logging.info(os.linesep + 'Test After Training: ' + eval_res)
 	if args.save_final_results==1: # save the prediction results
 		save_rec_results(data_dict['dev'], runner, 100)
-		save_rec_results(data_dict['test'], runner, 100)
+		if args.eval_test:
+			save_rec_results(data_dict['test'], runner, 100)
 	model.actions_after_train()
 	logging.info(os.linesep + '-' * 45 + ' END: ' + utils.get_time() + ' ' + '-' * 45)
 

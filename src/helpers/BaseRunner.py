@@ -24,6 +24,8 @@ class BaseRunner(object):
 							help='Check some tensors every check_epoch.')
 		parser.add_argument('--test_epoch', type=int, default=-1,
 							help='Print test results every test_epoch (-1 means no print).')
+		parser.add_argument('--eval_test', type=int, choices=[0, 1], default=0,
+							help='Whether this run may construct or evaluate the test split (default: 0).')
 		parser.add_argument('--early_stop', type=int, default=10,
 							help='The number of epochs when dev results drop continuously.')
 		parser.add_argument('--lr', type=float, default=1e-3,
@@ -89,6 +91,7 @@ class BaseRunner(object):
 		self.epoch = args.epoch
 		self.check_epoch = args.check_epoch
 		self.test_epoch = args.test_epoch
+		self.eval_test = bool(args.eval_test)
 		self.early_stop = args.early_stop
 		self.learning_rate = args.lr
 		self.batch_size = args.batch_size
@@ -166,7 +169,7 @@ class BaseRunner(object):
 				看看当前轮次是否需要进行test了。
 				如果当前 epoch 是测试周期（如果有设置）的倍数，则在测试集上评估模型性能，并将测试结果一并存入logging_str变量中
 				"""
-				if self.test_epoch > 0 and epoch % self.test_epoch  == 0:
+				if self.eval_test and self.test_epoch > 0 and epoch % self.test_epoch == 0:
 					test_result = self.evaluate(data_dict['test'], self.topk[:1], self.metrics)
 					logging_str += ' test=({})'.format(utils.format_metric(test_result))
 				testing_time = self._check_time()

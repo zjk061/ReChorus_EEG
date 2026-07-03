@@ -26,7 +26,7 @@ class SeqReader(BaseReader):
             position.append(len(self.user_his[uid]))
             self.user_his[uid].append((iid, t))
         sort_df['position'] = position
-        for key in ['train', 'dev', 'test']:
+        for key in self.phases:
             self.data_df[key] = pd.merge(
                 left=self.data_df[key], right=sort_df, how='left',
                 on=['user_id', 'item_id', 'time'])

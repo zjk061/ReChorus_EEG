@@ -87,7 +87,7 @@ class StrictPreCTRReader(ContextReader):
 	def _normalize_history_features(self):
 		if not self.normalization_stats:
 			return
-		for phase in ['train', 'dev', 'test']:
+		for phase in self.phases:
 			if 'history_eeg_310' in self.data_df[phase]:
 				self.data_df[phase]['history_eeg_310'] = self.data_df[phase]['history_eeg_310'].apply(
 					self._normalize_history_eeg
@@ -129,7 +129,7 @@ class StrictPreCTRReader(ContextReader):
 		id_columns = ['user_id', 'item_id']
 		self.item_features, self.user_features = None, None
 		self.feature_max = dict()
-		for key in ['train', 'dev', 'test']:
+		for key in self.phases:
 			logging.info('Loading context for %s set...' % key)
 			ids_df = self.data_df[key][id_columns]
 			for f in id_columns:

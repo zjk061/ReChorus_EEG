@@ -14,6 +14,7 @@ from typing import Dict, List
 from utils import utils
 from models.BaseModel import BaseModel
 from helpers.BaseRunner import BaseRunner
+from utils.like_metrics import evaluate_like_predictions
 
 import sklearn.metrics as sk_metrics
 
@@ -61,7 +62,9 @@ class CTRRunner(BaseRunner):
 		
 		# 如果命令行参数中没传入main_metric参数，那就让传入的metrics里的第一个指标作为main_metric来控制早停和寻找最佳模型。
 		# 如果指定了就按指定的来
-		self.main_metric = self.metrics[0] if not len(args.main_metric) else self.main_metric
+		self.main_metric = self.metrics[0] if not len(args.main_metric) else args.main_metric.strip().upper()
+		if self.main_metric not in self.metrics:
+			self.metrics.insert(0, self.main_metric)
 	
 	"""
 	对一个输入的dataset进行在其对应模型上的预测。然后给出这次预测展现出的模型性能指标
@@ -73,7 +76,14 @@ class CTRRunner(BaseRunner):
 		:return: result dict (key: metric)
 		"""
 		predictions, labels = self.predict(dataset)
-		return self.evaluate_method(predictions, labels, metrics)
+		requested = [metric.strip().upper() for metric in metrics]
+		stage_e_metrics = {'GAUC', 'MACRO_AUC', 'BRIER', 'ECE'}
+		if stage_e_metrics.intersection(requested):
+			if not hasattr(dataset, 'data') or 'user_id' not in dataset.data:
+				raise ValueError('User-level metrics require dataset.data[\'user_id\'].')
+			report = evaluate_like_predictions(labels, predictions, dataset.data['user_id'])
+			return {metric: float(report[metric]) for metric in requested}
+		return self.evaluate_method(predictions, labels, requested)
     
 	"""
 	使用 tqdm 显示进度条。

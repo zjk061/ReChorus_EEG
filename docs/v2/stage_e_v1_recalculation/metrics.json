@@ -1,0 +1,158 @@
+{
+  "overall": {
+    "AUC": 0.7762151726226529,
+    "GAUC": 0.5555438115844815,
+    "MACRO_AUC": 0.5629402566230902,
+    "LOG_LOSS": 0.516697656401599,
+    "BRIER": 0.17305953028590226,
+    "ECE": 0.08672650886312847,
+    "ACC": 0.7527932960893855,
+    "F1_SCORE": 0.5607940446650125,
+    "valid_user_count": 26,
+    "excluded_user_count": 4,
+    "excluded_user_reasons": {
+      "all_negative": 4
+    },
+    "gauc_weight_definition": "sample-count weighted mean AUC over users containing both labels",
+    "ece_bin_count": 10,
+    "ece_bin_rule": "equal-width [left,right), final bin includes 1.0",
+    "ece_bins": [
+      {
+        "index": 0,
+        "lower": 0.0,
+        "upper": 0.1,
+        "upper_inclusive": false,
+        "count": 116,
+        "mean_prediction": 0.06738831923275863,
+        "positive_rate": 0.017241379310344827,
+        "ece_contribution": 0.008124364568435755
+      },
+      {
+        "index": 1,
+        "lower": 0.1,
+        "upper": 0.2,
+        "upper_inclusive": false,
+        "count": 15,
+        "mean_prediction": 0.17157417833333338,
+        "positive_rate": 0.06666666666666667,
+        "ece_contribution": 0.002197783065642459
+      },
+      {
+        "index": 2,
+        "lower": 0.2,
+        "upper": 0.3,
+        "upper_inclusive": false,
+        "count": 160,
+        "mean_prediction": 0.288245411125,
+        "positive_rate": 0.1875,
+        "ece_contribution": 0.022512941033519557
+      },
+      {
+        "index": 3,
+        "lower": 0.3,
+        "upper": 0.4,
+        "upper_inclusive": false,
+        "count": 180,
+        "mean_prediction": 0.3319594089444445,
+        "positive_rate": 0.23333333333333334,
+        "ece_contribution": 0.024794264818435763
+      },
+      {
+        "index": 4,
+        "lower": 0.4,
+        "upper": 0.5,
+        "upper_inclusive": false,
+        "count": 50,
+        "mean_prediction": 0.4485558408,
+        "positive_rate": 0.4,
+        "ece_contribution": 0.00339077100558659
+      },
+      {
+        "index": 5,
+        "lower": 0.5,
+        "upper": 0.6,
+        "upper_inclusive": false,
+        "count": 3,
+        "mean_prediction": 0.5335198133333333,
+        "positive_rate": 0.3333333333333333,
+        "ece_contribution": 0.0008387701675977654
+      },
+      {
+        "index": 6,
+        "lower": 0.6,
+        "upper": 0.7,
+        "upper_inclusive": false,
+        "count": 192,
+        "mean_prediction": 0.6760688113020833,
+        "positive_rate": 0.5833333333333334,
+        "ece_contribution": 0.024867614203910593
+      },
+      {
+        "index": 7,
+        "lower": 0.7,
+        "upper": 0.8,
+        "upper_inclusive": false,
+        "count": 0,
+        "mean_prediction": null,
+        "positive_rate": null,
+        "ece_contribution": 0.0
+      },
+      {
+        "index": 8,
+        "lower": 0.8,
+        "upper": 0.9,
+        "upper_inclusive": false,
+        "count": 0,
+        "mean_prediction": null,
+        "positive_rate": null,
+        "ece_contribution": 0.0
+      },
+      {
+        "index": 9,
+        "lower": 0.9,
+        "upper": 1.0,
+        "upper_inclusive": true,
+        "count": 0,
+        "mean_prediction": null,
+        "positive_rate": null,
+        "ece_contribution": 0.0
+      }
+    ]
+  },
+  "strata": {},
+  "legacy_metadata_missing": true,
+  "bootstrap": {
+    "sampling_unit": "user cluster",
+    "seed": 2026,
+    "requested_replicates": 1000,
+    "effective_replicates": 1000,
+    "failed_replicates": 0,
+    "confidence": 0.95,
+    "intervals": {
+      "AUC": {
+        "lower": 0.6982428057120282,
+        "upper": 0.8356090444408473
+      },
+      "GAUC": {
+        "lower": 0.5008280403846108,
+        "upper": 0.6099938173638829
+      },
+      "MACRO_AUC": {
+        "lower": 0.5037410637514039,
+        "upper": 0.6208025731143326
+      },
+      "LOG_LOSS": {
+        "lower": 0.43713127783271927,
+        "upper": 0.587769557476799
+      },
+      "BRIER": {
+        "lower": 0.140510924319259,
+        "upper": 0.20310024707705168
+      },
+      "ECE": {
+        "lower": 0.040805333344139154,
+        "upper": 0.13638424005870317
+      }
+    }
+  }
+}

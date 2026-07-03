@@ -66,7 +66,7 @@ class ContextReader(BaseReader):
 		id_columns = ['user_id','item_id']
 		self.item_features, self.user_features = None, None # dict
 		self.feature_max = dict()
-		for key in ['train', 'dev', 'test']:
+		for key in self.phases:
 			logging.info('Loading context for %s set...'%(key))
 			ids_df = self.data_df[key][id_columns]
 			for f in id_columns: # get max value of each ID for embedding
