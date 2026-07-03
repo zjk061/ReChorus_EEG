@@ -7,3 +7,4 @@ __all__ = [
 ]
 
 from . import StrictPreCTRReader
+from . import EEGStateLikeReader

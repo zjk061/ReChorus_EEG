@@ -1,0 +1,73 @@
+{
+  "artifacts": {
+    "events.csv": "a05b1ec356bd0b2bf8ec119f2b3f23bc4dfc8ce246e09ef55154344567a8988e",
+    "normalization_stats.json": "dc7f8c7eb7fbf6505990fe89a440349596b28e18d8dcb35504a6c7c90b4bdf55",
+    "split_manifest.json": "6d63173a32b9b8193d52c340ab7d82d8ad3f06c1ec2361a7fc823f84e15544e7"
+  },
+  "cleaning_records": [
+    "No rows dropped or imputed",
+    "Renamed source columns to event schema",
+    "Stable-sorted by user_id, start_time, source_order",
+    "Parsed and validated each 310-dimensional EEG vector",
+    "Derived gap, session-boundary, session-position, and experiment-position features"
+  ],
+  "counts": {
+    "events": 3558,
+    "items": 2597,
+    "positives": 1112,
+    "users": 30
+  },
+  "legacy_intermediate_consistency": {
+    "available": true,
+    "note": "Legacy phase assignments were not reused",
+    "rows": 3558,
+    "status": "all_fields_and_rows_match"
+  },
+  "metadata": {
+    "item_meta_rows": 2603,
+    "missing_item_ids": [],
+    "missing_user_ids": [],
+    "unused_item_meta_count": 6,
+    "unused_item_meta_ids": [
+      274,
+      1138,
+      1186,
+      1355,
+      2262,
+      2652
+    ],
+    "user_meta_rows": 30
+  },
+  "normalization": {
+    "strategy": "global_train_zscore",
+    "unique_eeg_event_count": 2491
+  },
+  "schema_version": 2,
+  "source_files": {
+    "data(eeg).csv": "225849adb2ab5c13cab7aadf07e369ff6ef342be60f13dc687a5d09cb455ef22",
+    "item_meta.csv": "0087a7c4951f20500d9bb7d0edd306d1d18a6b7123fd1595e71dcd33efdfe732",
+    "user_meta.csv": "2940bd30c851f137a98dfb4aae8a3a8ad6546cdd76875e7e12007b38be15ba07"
+  },
+  "split": {
+    "counts": {
+      "dev": 357,
+      "test": 710,
+      "train": 2491
+    },
+    "locked_test_name": "v2_locked_legacy_test",
+    "version": "rolling_origin_v2_70_10_20"
+  },
+  "validation": {
+    "duplicate_user_timestamps": 0,
+    "eeg_all_finite": true,
+    "eeg_dimension": 310,
+    "labels": [
+      0,
+      1
+    ],
+    "maes_range": [
+      1,
+      5
+    ]
+  }
+}
