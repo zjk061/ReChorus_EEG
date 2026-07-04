@@ -1,0 +1,71 @@
+{
+  "H1-history-item": {
+    "difference_definition": "candidate minus reference",
+    "sampling_unit": "paired user cluster",
+    "seed": 2026,
+    "requested_replicates": 1000,
+    "effective_replicates": 1000,
+    "failed_replicates": 0,
+    "confidence": 0.95,
+    "intervals": {
+      "DELTA_GAUC": {
+        "lower": -0.012846947866880046,
+        "upper": 0.024818517164746413
+      },
+      "DELTA_AUC": {
+        "lower": 0.004677793728481197,
+        "upper": 0.10010242080554584
+      },
+      "DELTA_LOG_LOSS": {
+        "lower": -0.02841081443586921,
+        "upper": -0.002631746052152518
+      }
+    }
+  },
+  "H2-history-behavior": {
+    "difference_definition": "candidate minus reference",
+    "sampling_unit": "paired user cluster",
+    "seed": 2026,
+    "requested_replicates": 1000,
+    "effective_replicates": 1000,
+    "failed_replicates": 0,
+    "confidence": 0.95,
+    "intervals": {
+      "DELTA_GAUC": {
+        "lower": 0.003014792399815572,
+        "upper": 0.051182424492757464
+      },
+      "DELTA_AUC": {
+        "lower": 0.02750957831533081,
+        "upper": 0.13921599936053275
+      },
+      "DELTA_LOG_LOSS": {
+        "lower": -0.037453605166313825,
+        "upper": -0.008801319374854925
+      }
+    }
+  },
+  "H3-history-maes": {
+    "difference_definition": "candidate minus reference",
+    "sampling_unit": "paired user cluster",
+    "seed": 2026,
+    "requested_replicates": 1000,
+    "effective_replicates": 1000,
+    "failed_replicates": 0,
+    "confidence": 0.95,
+    "intervals": {
+      "DELTA_GAUC": {
+        "lower": -0.019890637284800082,
+        "upper": 0.03504799674613537
+      },
+      "DELTA_AUC": {
+        "lower": 0.025361509835193995,
+        "upper": 0.13098215683693618
+      },
+      "DELTA_LOG_LOSS": {
+        "lower": -0.03220305259226391,
+        "upper": -0.007040615862475563
+      }
+    }
+  }
+}

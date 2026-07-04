@@ -1,0 +1,16 @@
+{
+  "split_version": "protocol_a_rollv2_cv3",
+  "locked_test_accessed": false,
+  "anchor_gauc_mean_15_runs": 0.5763517899463146,
+  "history_gauc_mean_15_runs": 0.6048387656197597,
+  "history_minus_anchor_gauc": 0.028486975673445047,
+  "history_four_of_five_each_fold": true,
+  "history_increment_passed": true,
+  "paired_delta_gauc_ci": {
+    "lower": 0.006670768491062458,
+    "upper": 0.056933135191288425
+  },
+  "selected_non_eeg_backbone": "H2-history-behavior",
+  "gate_m_recovery_passed": true,
+  "reason": "The frozen cold-item-safe anchor exactly preserves the strongest baseline; history is selected only if stable across folds."
+}

@@ -1,0 +1,14 @@
+{
+  "selection_dataset": "dev only; v2_locked_legacy_test was not loaded into model data",
+  "anchor_equivalence_max_abs_error": 6.126309021192711e-08,
+  "anchor_equivalence_passed": true,
+  "best_recovery_model": "H2-history-behavior",
+  "best_recovery_mean_gauc": 0.605701613848467,
+  "anchor_mean_gauc": 0.5853747553922379,
+  "seeds_not_below_anchor": 5,
+  "best_unseen_gauc": 0.604498476929307,
+  "anchor_unseen_gauc": 0.5861978381741227,
+  "unseen_no_material_degradation": true,
+  "eligible_for_rolling_cv": true,
+  "locked_test_accessed": false
+}

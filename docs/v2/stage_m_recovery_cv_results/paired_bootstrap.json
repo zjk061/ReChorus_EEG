@@ -1,0 +1,23 @@
+{
+  "difference_definition": "candidate minus reference",
+  "sampling_unit": "paired user cluster",
+  "seed": 2026,
+  "requested_replicates": 1000,
+  "effective_replicates": 1000,
+  "failed_replicates": 0,
+  "confidence": 0.95,
+  "intervals": {
+    "DELTA_GAUC": {
+      "lower": 0.006670768491062458,
+      "upper": 0.056933135191288425
+    },
+    "DELTA_AUC": {
+      "lower": 0.04140870748999181,
+      "upper": 0.10638340086606697
+    },
+    "DELTA_LOG_LOSS": {
+      "lower": -0.028853631854690757,
+      "upper": -0.010757307404173154
+    }
+  }
+}

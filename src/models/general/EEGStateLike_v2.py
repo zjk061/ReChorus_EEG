@@ -25,6 +25,12 @@ class EEGStateLikeV2Config:
     history_encoder: str = "mean"
     id_mode: str = "content_only"
     use_maes: bool = True
+    anchor_size: int = 0
+    use_linear_anchor: bool = False
+    enable_content_residual: bool = True
+    enable_history: bool = True
+    enable_history_extra: bool = True
+    enable_calibration: bool = True
 
 
 class SharedContentTower(nn.Module):
@@ -96,6 +102,32 @@ class EEGStateLikeV2(nn.Module):
         self.global_bias = nn.Parameter(torch.zeros(()))
         self.user_bias = nn.Embedding(config.user_count, 1)
         nn.init.zeros_(self.user_bias.weight)
+        self.anchor_head = None
+        if config.use_linear_anchor:
+            if not 0 < config.anchor_size <= config.content_size:
+                raise ValueError("anchor_size must select a non-empty prefix of content features")
+            self.anchor_head = nn.Linear(config.anchor_size, 1)
+            for parameter in self.anchor_head.parameters():
+                parameter.requires_grad_(False)
+        self.content_residual_gate = nn.Parameter(
+            torch.tensor(0.0 if config.use_linear_anchor else 1.0),
+            requires_grad=config.use_linear_anchor and config.enable_content_residual,
+        )
+        self.history_gate = nn.Parameter(
+            torch.tensor(0.0 if config.use_linear_anchor else 1.0),
+            requires_grad=config.use_linear_anchor and config.enable_history,
+        )
+
+        if not config.enable_calibration:
+            with torch.no_grad():
+                self.global_bias.zero_()
+                self.user_bias.weight.zero_()
+                self.user_meta_head.weight.zero_()
+                self.user_meta_head.bias.zero_()
+            self.global_bias.requires_grad_(False)
+            self.user_bias.weight.requires_grad_(False)
+            for parameter in self.user_meta_head.parameters():
+                parameter.requires_grad_(False)
 
         self.item_embedding = None
         if config.id_mode != "content_only":
@@ -110,6 +142,27 @@ class EEGStateLikeV2(nn.Module):
             self.history_encoder = CandidateAwareDIN(h)
         else:
             self.history_encoder = None
+
+        if not config.enable_content_residual:
+            for parameter in self.candidate_head.parameters():
+                parameter.requires_grad_(False)
+        if not config.enable_history or not config.enable_history_extra:
+            for parameter in self.history_extra_projection.parameters():
+                parameter.requires_grad_(False)
+        if not config.enable_history and self.history_encoder is not None:
+            for parameter in self.history_encoder.parameters():
+                parameter.requires_grad_(False)
+        if not config.enable_history and not config.enable_content_residual:
+            for parameter in self.content_tower.parameters():
+                parameter.requires_grad_(False)
+
+    def set_linear_anchor(self, weight: torch.Tensor, bias: torch.Tensor) -> None:
+        """Load and freeze coefficients fitted by the Stage-B LR contract."""
+        if self.anchor_head is None:
+            raise ValueError("linear anchor is disabled")
+        with torch.no_grad():
+            self.anchor_head.weight.copy_(weight.reshape_as(self.anchor_head.weight))
+            self.anchor_head.bias.copy_(bias.reshape_as(self.anchor_head.bias))
 
     def _add_id(self, representation: torch.Tensor, ids: torch.Tensor) -> torch.Tensor:
         if self.item_embedding is None:
@@ -148,15 +201,24 @@ class EEGStateLikeV2(nn.Module):
                 raise ValueError("item indices are required by the selected ID ablation")
             candidate = self._add_id(candidate, candidate_item_index)
             historical = self._add_id(historical, history_item_index)
-        historical = historical + self.history_extra_projection(history_extra)
+        if self.config.enable_history_extra:
+            historical = historical + self.history_extra_projection(history_extra)
         state = self._history_state(candidate, historical, history_lengths)
+        residual_score = self.candidate_head(candidate).squeeze(-1)
+        if self.anchor_head is None:
+            candidate_score = residual_score
+        else:
+            anchor_score = self.anchor_head(
+                candidate_content[:, :self.config.anchor_size]
+            ).squeeze(-1)
+            candidate_score = anchor_score + self.content_residual_gate * residual_score
+        history_score = (state * candidate).sum(dim=-1) / math.sqrt(candidate.shape[-1])
         components = {
             "global_bias": self.global_bias.expand(candidate.shape[0]),
             "user_bias": self.user_bias(user_index).squeeze(-1),
             "user_meta_score": self.user_meta_head(user_meta).squeeze(-1),
-            "candidate_content_score": self.candidate_head(candidate).squeeze(-1),
-            "history_candidate_score": (state * candidate).sum(dim=-1) / math.sqrt(candidate.shape[-1]),
+            "candidate_content_score": candidate_score,
+            "history_candidate_score": self.history_gate * history_score,
         }
         logit = torch.stack([components[name] for name in self.COMPONENT_NAMES], dim=0).sum(dim=0)
         return (logit, components) if return_components else logit
-

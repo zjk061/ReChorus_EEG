@@ -17,6 +17,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from baselines.stage_b import load_stage_b_data  # noqa: E402
 from baselines.stage_m import build_stage_m_arrays, fit_stage_m  # noqa: E402
+from data.EEGsvRec_eeg.build_stage_m_cv_manifest import build_manifest  # noqa: E402
 from models.general.EEGStateLike_v2 import EEGStateLikeV2, EEGStateLikeV2Config  # noqa: E402
 
 
@@ -102,6 +103,52 @@ class StageMBackboneTests(unittest.TestCase):
             payload = torch.load(checkpoint, map_location="cpu")
             self.assertIn("state_dict", payload)
             self.assertEqual(payload["config"]["id_mode"], "content_only")
+
+    def test_lr_anchor_is_numerically_equivalent(self):
+        prediction, params, config, components = fit_stage_m(
+            self.data, seed=0, history_length=30, use_lr_anchor=True,
+            enable_content_residual=False, enable_history=False,
+            enable_calibration=False, history_feature_set="item_only",
+        )
+        self.assertEqual(params, 0)
+        self.assertEqual(config["best_epoch"], 0)
+        self.assertLess(config["anchor_max_abs_error"], 1e-5)
+        self.assertAlmostEqual(config["best_dev_gauc"], 0.5853747553922379, places=12)
+        self.assertTrue(np.allclose(components["history_candidate_score"], 0.0))
+
+    def test_recovery_history_feature_groups_are_nested(self):
+        item_only = build_stage_m_arrays(
+            self.data, history_length=30, history_feature_set="item_only"
+        )
+        behavior = build_stage_m_arrays(
+            self.data, history_length=30, history_feature_set="behavior"
+        )
+        maes = build_stage_m_arrays(
+            self.data, history_length=30, history_feature_set="maes"
+        )
+        self.assertTrue(np.all(item_only.history_extra == 0))
+        self.assertTrue(np.all(behavior.history_extra[:, :, behavior.maes_slice:behavior.maes_slice + 4] == 0))
+        self.assertGreater(np.abs(behavior.history_extra).sum(), 0)
+        self.assertGreater(np.abs(maes.history_extra[:, :, maes.maes_slice:maes.maes_slice + 4]).sum(), 0)
+
+    def test_recovery_cv_is_expanding_and_keeps_test_locked(self):
+        source = json.loads((self.dataset_dir / "split_manifest.json").read_text(encoding="utf-8"))
+        manifest = build_manifest(source)
+        self.assertEqual(manifest["split_version"], "protocol_a_rollv2_cv3")
+        self.assertEqual(len(manifest["folds"]), 3)
+        locked = set(source["protocol_a"]["event_ids"]["test"])
+        previous_train = set()
+        for fold in manifest["folds"]:
+            train = set(fold["event_ids"]["train"])
+            dev = set(fold["event_ids"]["dev"])
+            self.assertTrue(previous_train.issubset(train))
+            self.assertFalse(train & dev)
+            self.assertFalse((train | dev) & locked)
+            previous_train = train
+        self.assertEqual(
+            set(manifest["folds"][-1]["event_ids"]["dev"]),
+            set(source["protocol_a"]["event_ids"]["dev"]),
+        )
 
 
 if __name__ == "__main__":

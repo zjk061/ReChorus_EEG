@@ -11,6 +11,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import torch
+from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from torch import nn
 
@@ -30,6 +31,7 @@ class StageMArrays:
     history_item_index: np.ndarray
     history_lengths: np.ndarray
     label: np.ndarray
+    anchor_size: int
     maes_slice: int
     train_index: np.ndarray
     dev_index: np.ndarray
@@ -42,15 +44,19 @@ def _one_hot(train: pd.DataFrame, all_frame: pd.DataFrame, columns: list[str]) -
 
 
 def build_stage_m_arrays(data: StageBData, history_length: int = 20,
-                         id_mode: str = "content_only", use_maes: bool = True) -> StageMArrays:
+                         id_mode: str = "content_only", use_maes: bool = True,
+                         history_feature_set: str = "maes") -> StageMArrays:
     if history_length not in {10, 20, 30}:
         raise ValueError("Stage M compares history lengths 10, 20, and 30 only")
+    if history_feature_set not in {"item_only", "behavior", "maes"}:
+        raise ValueError("history_feature_set must be item_only, behavior, or maes")
     frame, train = data.frame, data.train
     item_columns = data.feature_groups["content"]
     content_scaler = StandardScaler().fit(train[item_columns])
     item_values = content_scaler.transform(frame[item_columns]).astype(np.float32)
     video_values = _one_hot(train, frame, ["video_type"])
     content = np.concatenate([item_values, video_values], axis=1)
+    anchor_size = len(item_columns)
 
     user_numeric = ["u_age_f", "u_usage_f"]
     user_scaler = StandardScaler().fit(train[user_numeric])
@@ -74,13 +80,15 @@ def build_stage_m_arrays(data: StageBData, history_length: int = 20,
     behavior_scaler = StandardScaler().fit(train[continuous])
     behavior = behavior_scaler.transform(frame[continuous]).astype(np.float32)
     maes = ((frame[["interest", "immersion", "valence", "arousal"]].to_numpy(np.float32) - 1.0) / 4.0)
-    if not use_maes:
+    if not use_maes or history_feature_set != "maes":
         maes = np.zeros_like(maes)
     session = _one_hot(train, frame, ["session_mode"])
     # Label is an observed historical input only; its placement at index 0 is tested.
     extra_values = np.concatenate([
         frame[["label"]].to_numpy(np.float32), behavior, maes, session
     ], axis=1)
+    if history_feature_set == "item_only":
+        extra_values = np.zeros_like(extra_values)
     maes_slice = 1 + len(continuous)
 
     max_len = history_length
@@ -98,9 +106,19 @@ def build_stage_m_arrays(data: StageBData, history_length: int = 20,
             history_ids[row, :length] = item_index[selected]
     return StageMArrays(
         content, user_meta, user_index, item_index, history_content, history_extra,
-        history_ids, lengths, frame.label.to_numpy(np.float32), maes_slice,
+        history_ids, lengths, frame.label.to_numpy(np.float32), anchor_size, maes_slice,
         data.train_index, data.dev_index,
     )
+
+
+def fit_lr_content_anchor(data: StageBData, arrays: StageMArrays) -> LogisticRegression:
+    """Fit the exact Stage-B LR-content-only estimator on the shared standardized prefix."""
+    estimator = LogisticRegression(C=0.1, solver="liblinear", max_iter=1000, random_state=0)
+    estimator.fit(
+        arrays.candidate_content[arrays.train_index, :arrays.anchor_size],
+        arrays.label[arrays.train_index],
+    )
+    return estimator
 
 
 def _batch(arrays: StageMArrays, index: np.ndarray | torch.Tensor, device: torch.device):
@@ -142,36 +160,67 @@ def fit_stage_m(data: StageBData, seed: int, history_encoder: str = "mean",
                 history_length: int = 20, id_mode: str = "content_only",
                 use_maes: bool = True, hidden_size: int = 24, max_epochs: int = 60,
                 patience: int = 8, device_name: str = "cpu",
-                checkpoint_path: str | Path | None = None):
+                checkpoint_path: str | Path | None = None,
+                use_lr_anchor: bool = False, enable_content_residual: bool = True,
+                enable_history: bool = True, enable_calibration: bool = True,
+                history_feature_set: str = "maes"):
     set_seed(seed)
-    arrays = build_stage_m_arrays(data, history_length, id_mode, use_maes)
+    arrays = build_stage_m_arrays(
+        data, history_length, id_mode, use_maes, history_feature_set
+    )
     item_count = int(arrays.item_index.max()) + 1
     config = EEGStateLikeV2Config(
         content_size=arrays.candidate_content.shape[1], user_meta_size=arrays.user_meta.shape[1],
         history_extra_size=arrays.history_extra.shape[2], user_count=int(arrays.user_index.max()) + 1,
         item_count=item_count, hidden_size=hidden_size, history_encoder=history_encoder,
         id_mode=id_mode, use_maes=use_maes,
+        anchor_size=arrays.anchor_size, use_linear_anchor=use_lr_anchor,
+        enable_content_residual=enable_content_residual, enable_history=enable_history,
+        enable_history_extra=history_feature_set != "item_only",
+        enable_calibration=enable_calibration,
     )
     model = EEGStateLikeV2(config)
+    anchor_reference = None
+    if use_lr_anchor:
+        anchor = fit_lr_content_anchor(data, arrays)
+        model.set_linear_anchor(
+            torch.from_numpy(anchor.coef_.astype(np.float32)),
+            torch.from_numpy(anchor.intercept_.astype(np.float32)),
+        )
+        anchor_reference = anchor.predict_proba(
+            arrays.candidate_content[arrays.dev_index, :arrays.anchor_size]
+        )[:, 1]
     device = torch.device(device_name)
     model.to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=8e-4, weight_decay=5e-4)
+    trainable_parameters = [parameter for parameter in model.parameters() if parameter.requires_grad]
+    optimizer = None if not trainable_parameters else torch.optim.AdamW(
+        trainable_parameters, lr=8e-4, weight_decay=5e-4
+    )
     criterion = nn.BCEWithLogitsLoss()
     train_indices, dev_indices = arrays.train_index, arrays.dev_index
     y_dev = arrays.label[dev_indices]
     dev_users = data.frame.iloc[dev_indices].user_id.to_numpy()
     generator = torch.Generator().manual_seed(seed)
     best_state, best_gauc, best_epoch, stale = None, -math.inf, 0, 0
-    for epoch in range(1, max_epochs + 1):
+    epochs = range(1, max_epochs + 1) if (enable_history or enable_content_residual or enable_calibration) else ()
+    if not epochs:
+        prediction, _ = predict_with_components(model, arrays, dev_indices, device)
+        best_gauc = evaluate_like_predictions(y_dev, prediction, dev_users)["GAUC"]
+        best_state = copy.deepcopy({key: value.detach().cpu() for key, value in model.state_dict().items()})
+    for epoch in epochs:
         model.train()
         order = torch.randperm(len(train_indices), generator=generator).numpy()
         for start in range(0, len(order), 128):
             index = train_indices[order[start:start + 128]]
+            if optimizer is None:
+                raise RuntimeError("training requested but the model has no trainable parameters")
             optimizer.zero_grad(set_to_none=True)
             logits = model(*_batch(arrays, index, device))
             target = torch.as_tensor(arrays.label[index], device=device)
             # Explicitly regularize the user-bias term so identity cannot cheaply dominate.
-            loss = criterion(logits, target) + 1e-3 * model.user_bias.weight.pow(2).mean()
+            loss = criterion(logits, target)
+            if model.user_bias.weight.requires_grad:
+                loss = loss + 1e-3 * model.user_bias.weight.pow(2).mean()
             if not torch.isfinite(loss):
                 raise FloatingPointError("non-finite Stage-M loss")
             loss.backward()
@@ -202,11 +251,18 @@ def fit_stage_m(data: StageBData, seed: int, history_encoder: str = "mean",
         }, checkpoint_path)
     prediction, components = predict_with_components(model, arrays, dev_indices, device)
     params = sum(parameter.numel() for parameter in model.parameters() if parameter.requires_grad)
+    anchor_max_abs_error = None
+    if anchor_reference is not None and not enable_history and not enable_content_residual and not enable_calibration:
+        anchor_max_abs_error = float(np.max(np.abs(prediction - anchor_reference)))
     metadata: dict[str, Any] = {
         "best_epoch": best_epoch, "best_dev_gauc": best_gauc, "history_encoder": history_encoder,
         "history_length": history_length, "hidden_size": hidden_size, "id_mode": id_mode,
         "uses_eeg": False, "uses_maes": use_maes, "selection_metric": "dev_GAUC",
         "optimizer": "AdamW", "learning_rate": 8e-4, "weight_decay": 5e-4,
+        "use_lr_anchor": use_lr_anchor, "anchor_max_abs_error": anchor_max_abs_error,
+        "enable_content_residual": enable_content_residual,
+        "enable_history": enable_history, "enable_calibration": enable_calibration,
+        "history_feature_set": history_feature_set,
         "component_summary": component_summary(components),
         "checkpoint": "" if checkpoint_path is None else str(checkpoint_path),
     }
