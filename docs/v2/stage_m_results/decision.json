@@ -1,0 +1,11 @@
+{
+  "selection_dataset": "dev only; v2_locked_legacy_test discarded before feature construction",
+  "best_stage_m_model": "mean-h30-content_only",
+  "best_stage_m_mean_gauc": 0.550099869050918,
+  "best_strong_baseline": "LR-content-only",
+  "best_strong_baseline_mean_gauc": 0.5853747553922379,
+  "five_seed_gauc_requirement_passed": false,
+  "cold_item_requirement_passed": true,
+  "gate_m_passed": false,
+  "bootstrap_definition": "95% user-cluster CI on the five-seed mean prediction"
+}
