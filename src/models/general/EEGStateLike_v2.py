@@ -190,6 +190,7 @@ class EEGStateLikeV2(nn.Module):
                 history_extra: torch.Tensor, history_lengths: torch.Tensor,
                 candidate_item_index: torch.Tensor | None = None,
                 history_item_index: torch.Tensor | None = None,
+                history_state_increment: torch.Tensor | None = None,
                 return_components: bool = False):
         candidate = self.content_tower(candidate_content)
         history_shape = history_content.shape
@@ -203,6 +204,17 @@ class EEGStateLikeV2(nn.Module):
             historical = self._add_id(historical, history_item_index)
         if self.config.enable_history_extra:
             historical = historical + self.history_extra_projection(history_extra)
+        # Stage G injects EEG/MAES only here: every increment belongs to an
+        # already observed historical event.  Keeping the hook after content
+        # and behaviour projection makes it impossible for current-event EEG
+        # to enter the candidate tower.
+        if history_state_increment is not None:
+            if history_state_increment.shape != historical.shape:
+                raise ValueError(
+                    "history_state_increment must match encoded history shape "
+                    f"{tuple(historical.shape)}, got {tuple(history_state_increment.shape)}"
+                )
+            historical = historical + history_state_increment
         state = self._history_state(candidate, historical, history_lengths)
         residual_score = self.candidate_head(candidate).squeeze(-1)
         if self.anchor_head is None:

@@ -1,0 +1,89 @@
+{
+  "locked_test_accessed": false,
+  "gate_g_evaluated": true,
+  "gate_g_passed": false,
+  "mean_gauc_by_ablation": {
+    "E0": 0.6056863493348367,
+    "E1": 0.6018056313102809,
+    "E2": 0.596337098971212,
+    "E3": 0.5978481433953658,
+    "E4": 0.5959296038330522,
+    "E5": 0.6039745539071288,
+    "E6": 0.5998812518374509,
+    "E7": 0.6019184120670086,
+    "E8": 0.595104078190041
+  },
+  "real_eeg_four_of_five_each_fold_vs_E0_E2_E8": false,
+  "paired_bootstrap": {
+    "E0": {
+      "difference_definition": "candidate minus reference",
+      "sampling_unit": "paired user cluster",
+      "seed": 2026,
+      "requested_replicates": 1000,
+      "effective_replicates": 1000,
+      "failed_replicates": 0,
+      "confidence": 0.95,
+      "intervals": {
+        "DELTA_GAUC": {
+          "lower": -0.03697332855700462,
+          "upper": 0.025131108021748883
+        },
+        "DELTA_AUC": {
+          "lower": 0.03458503874294512,
+          "upper": 0.11938188658706306
+        },
+        "DELTA_LOG_LOSS": {
+          "lower": -0.06535957207753125,
+          "upper": -0.010650455383702236
+        }
+      }
+    },
+    "E2": {
+      "difference_definition": "candidate minus reference",
+      "sampling_unit": "paired user cluster",
+      "seed": 2026,
+      "requested_replicates": 1000,
+      "effective_replicates": 1000,
+      "failed_replicates": 0,
+      "confidence": 0.95,
+      "intervals": {
+        "DELTA_GAUC": {
+          "lower": -0.026930375952387342,
+          "upper": 0.055574101823383
+        },
+        "DELTA_AUC": {
+          "lower": -0.001790417767199417,
+          "upper": 0.04478591330403325
+        },
+        "DELTA_LOG_LOSS": {
+          "lower": -0.022127220114383825,
+          "upper": -0.0019985099203281512
+        }
+      }
+    },
+    "E8": {
+      "difference_definition": "candidate minus reference",
+      "sampling_unit": "paired user cluster",
+      "seed": 2026,
+      "requested_replicates": 1000,
+      "effective_replicates": 1000,
+      "failed_replicates": 0,
+      "confidence": 0.95,
+      "intervals": {
+        "DELTA_GAUC": {
+          "lower": -0.03425700336992469,
+          "upper": 0.013349401302308458
+        },
+        "DELTA_AUC": {
+          "lower": 0.046772267370264534,
+          "upper": 0.13919209493343382
+        },
+        "DELTA_LOG_LOSS": {
+          "lower": -0.06934858615198249,
+          "upper": -0.014075621826969403
+        }
+      }
+    }
+  },
+  "reason": "real EEG did not satisfy the mandatory multi-seed stability rule"
+}

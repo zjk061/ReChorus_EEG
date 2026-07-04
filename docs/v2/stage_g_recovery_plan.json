@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "status": "preregistered_not_started",
+  "phase": "G-R",
+  "created_at": "2026-07-04",
+  "user_requirement": "The formal project path must genuinely use historical EEG because EEG is the dataset's core innovation.",
+  "evidence_preserved": {
+    "original_gate_g_passed": false,
+    "E0_mean_GAUC": 0.6056863493348367,
+    "E1_mean_GAUC": 0.6018056313102809,
+    "interpretation": "The tested mean-pooled gated EEG path failed; this does not prove all causal EEG representations are useless."
+  },
+  "locked_test_access_allowed": false,
+  "split_version": "protocol_a_rollv2_cv3",
+  "base_model": "H2-history-behavior",
+  "required_eeg_path": {
+    "causal_history_only": true,
+    "states": ["last", "delta", "ema3", "ema10", "trend"],
+    "candidate_interaction": "low_rank_bilinear_plus_optional_small_mlp",
+    "residual_logit_anchor": true,
+    "residual_scale_initialization": 0.0,
+    "must_measure_permutation_sensitivity": true,
+    "must_measure_eeg_gradient": true
+  },
+  "representation_candidates": ["train_pca16", "band_region_statistics", "band_attention_only_after_signal"],
+  "auxiliary_loss_weights": [0.0, 0.05, 0.1],
+  "mandatory_controls": ["E0_no_eeg", "causal_within_user_shuffle", "E8_zero_path"],
+  "budgets": {
+    "GR1_representation_screen": 18,
+    "GR2_fusion_and_auxiliary": 45,
+    "GR3_five_seed_authenticity": 60,
+    "maximum_total_runs": 123
+  },
+  "reporting_rules": [
+    "Never delete or rewrite the original failed Gate-G evidence.",
+    "Do not claim temporal EEG gain unless real EEG is stable against E0, shuffle and zero.",
+    "A mandatory EEG product model and statistically proven EEG gain are separate claims.",
+    "Do not access the locked test during G-R."
+  ],
+  "next_phase": "Resume a revised Stage T around the selected EEG candidate, or request an explicit product/evidence decision if no EEG candidate is defensible."
+}

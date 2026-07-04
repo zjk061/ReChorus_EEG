@@ -65,8 +65,11 @@ def build_stage_m_arrays(data: StageBData, history_length: int = 20,
         _one_hot(train, frame, ["u_gender_c"]),
     ], axis=1)
     users = sorted(train.user_id.unique().tolist())
-    user_map = {value: index for index, value in enumerate(users)}
-    user_index = frame.user_id.map(user_map).to_numpy(dtype=np.int64)
+    # Zero is the fixed unknown-user slot used by Stage-G GroupKFold.  The
+    # rolling protocol contains no unknown users, so this is behaviourally
+    # equivalent there while making new-user evaluation well-defined.
+    user_map = {value: index + 1 for index, value in enumerate(users)}
+    user_index = frame.user_id.map(user_map).fillna(0).to_numpy(dtype=np.int64)
 
     # Index zero is a fixed unknown vector.  Formal content_only never consumes it.
     if id_mode == "random_unseen_id":
