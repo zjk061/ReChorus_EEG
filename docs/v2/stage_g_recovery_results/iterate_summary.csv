@@ -1,0 +1,2 @@
+model,run_count,gauc_mean,gauc_std,auc_mean,logloss_mean,brier_mean,ece_mean,correction_abs_mean,base_gauc_mean,eeg_gradient_mean,zero_sensitivity_mean,shuffle_sensitivity_mean
+band_region_dynamic-bilinear-aux0,9,0.6060442900158168,0.02006325798088612,0.6045294709577124,0.6442575817816458,0.22080613664926516,0.0690348125250258,0.04479601961146626,0.5999792017484886,0.08623830821313556,0.009072198406405127,0.005489430483268936

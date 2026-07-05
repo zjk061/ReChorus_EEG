@@ -36,6 +36,7 @@ NORMALIZATIONS = {
 @dataclass
 class StageGArrays:
     base: StageMArrays
+    event_eeg: np.ndarray
     history_eeg: np.ndarray
     history_maes: np.ndarray
     event_ids: np.ndarray
@@ -203,7 +204,7 @@ def build_stage_g_arrays(data: StageBData, dataset_dir: str | Path, ablation: st
         if len(selected):
             history_eeg[row, :len(selected)] = source[selected]
             history_maes[row, :len(selected)] = maes[selected]
-    return StageGArrays(base, history_eeg, history_maes, frame.event_id.to_numpy(),
+    return StageGArrays(base, source.astype(np.float32), history_eeg, history_maes, frame.event_id.to_numpy(),
                         frame.user_id.to_numpy(), normalization, ablation, mapping, audit)
 
 

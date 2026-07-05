@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "preregistered_not_started",
+  "status": "complete_observed_gain_temporal_gain_unproven",
   "phase": "G-R",
   "created_at": "2026-07-04",
   "user_requirement": "The formal project path must genuinely use historical EEG because EEG is the dataset's core innovation.",
@@ -31,6 +31,11 @@
     "GR3_five_seed_authenticity": 60,
     "maximum_total_runs": 123
   },
+  "GR2_budget_allocation": {
+    "completed_fusion_runs": 36,
+    "reserved_evidence_driven_dynamic_state_iteration": 9,
+    "dynamic_state_definition": ["delta", "trend"]
+  },
   "reporting_rules": [
     "Never delete or rewrite the original failed Gate-G evidence.",
     "Do not claim temporal EEG gain unless real EEG is stable against E0, shuffle and zero.",
@@ -38,4 +43,16 @@
     "Do not access the locked test during G-R."
   ],
   "next_phase": "Resume a revised Stage T around the selected EEG candidate, or request an explicit product/evidence decision if no EEG candidate is defensible."
+  ,
+  "final_selection": {
+    "representation": "band_region",
+    "states": ["last", "delta", "ema3", "ema10", "trend"],
+    "interaction": "low_rank_bilinear",
+    "auxiliary_weight": 0.0,
+    "real_eeg_mean_gauc": 0.6106098789169059,
+    "no_eeg_mean_gauc": 0.6025329576586558,
+    "observed_delta_gauc": 0.0080769212582501,
+    "causal_shuffle_mean_gauc": 0.6111575584931447,
+    "temporal_eeg_gain_proven": false
+  }
 }

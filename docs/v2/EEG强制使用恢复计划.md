@@ -116,6 +116,8 @@ Loss = next_like_BCE + lambda_aux * historical_MAES_reconstruction
 
 最多 45 runs，不继续增加结构。
 
+若正式真实性确认显示真实 EEG 优于 E0、但 causal shuffle 不低于真实 EEG，则允许使用本阶段预留的最后 9 runs 做一次动态状态消融：仅保留 `delta + trend`，去除 last/EMA 绝对水平，以检验提升是否来自 subject identity。该迭代仍固定 band/region + bilinear，不新增结构或超参数。
+
 ### G-R3. 真实性确认
 
 唯一 EEG 候选与 E0、causal user-shuffle、zero 路径在 3 folds × 5 seeds 上确认，最多 60 runs，并做配对用户簇 bootstrap。

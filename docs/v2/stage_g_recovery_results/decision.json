@@ -1,0 +1,82 @@
+{
+  "locked_test_accessed": false,
+  "mean_gauc_by_mode": {
+    "causal_shuffle": 0.6111575584931447,
+    "no_eeg": 0.6025329576586558,
+    "real": 0.6106098789169059,
+    "zero": 0.6025329576586558
+  },
+  "real_four_of_five_each_fold_vs_controls": false,
+  "paired_bootstrap": {
+    "no_eeg": {
+      "difference_definition": "candidate minus reference",
+      "sampling_unit": "paired user cluster",
+      "seed": 2026,
+      "requested_replicates": 1000,
+      "effective_replicates": 1000,
+      "failed_replicates": 0,
+      "confidence": 0.95,
+      "intervals": {
+        "DELTA_GAUC": {
+          "lower": -0.006727811327091571,
+          "upper": 0.03463486244442619
+        },
+        "DELTA_AUC": {
+          "lower": 0.013481153247547817,
+          "upper": 0.043957379934915206
+        },
+        "DELTA_LOG_LOSS": {
+          "lower": -0.01662623057107502,
+          "upper": -0.005125873073692391
+        }
+      }
+    },
+    "causal_shuffle": {
+      "difference_definition": "candidate minus reference",
+      "sampling_unit": "paired user cluster",
+      "seed": 2026,
+      "requested_replicates": 1000,
+      "effective_replicates": 1000,
+      "failed_replicates": 0,
+      "confidence": 0.95,
+      "intervals": {
+        "DELTA_GAUC": {
+          "lower": -0.02915434590075586,
+          "upper": 0.022813345137469545
+        },
+        "DELTA_AUC": {
+          "lower": -0.01105093891085098,
+          "upper": 0.020065186396581787
+        },
+        "DELTA_LOG_LOSS": {
+          "lower": -0.005849012468976659,
+          "upper": 0.0027216887606134194
+        }
+      }
+    },
+    "zero": {
+      "difference_definition": "candidate minus reference",
+      "sampling_unit": "paired user cluster",
+      "seed": 2026,
+      "requested_replicates": 1000,
+      "effective_replicates": 1000,
+      "failed_replicates": 0,
+      "confidence": 0.95,
+      "intervals": {
+        "DELTA_GAUC": {
+          "lower": -0.006727811327091571,
+          "upper": 0.03463486244442619
+        },
+        "DELTA_AUC": {
+          "lower": 0.013481153247547817,
+          "upper": 0.043957379934915206
+        },
+        "DELTA_LOG_LOSS": {
+          "lower": -0.01662623057107502,
+          "upper": -0.005125873073692391
+        }
+      }
+    }
+  },
+  "temporal_eeg_gain_proven": false
+}

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "paused_by_mandatory_eeg_requirement",
+  "status": "preregistered_ready_after_g_recovery",
   "phase": "T",
   "created_at": "2026-07-04",
   "objective": "Test whether limited non-EEG training changes reliably improve the frozen H2 backbone on user-level ranking.",
@@ -22,6 +22,14 @@
     "weight_decay": 0.0005,
     "gradient_clip_norm": 1.0,
     "loss_base": "BCEWithLogitsLoss"
+  },
+  "frozen_eeg_candidate": {
+    "representation": "band_region",
+    "states": ["last", "delta", "ema3", "ema10", "trend"],
+    "interaction": "low_rank_bilinear",
+    "auxiliary_weight": 0.0,
+    "residual_anchor": "H2-history-behavior",
+    "mandatory_controls": ["E0_no_eeg", "causal_within_user_shuffle", "E8_zero_path"]
   },
   "forbidden_changes": [
     "EEG or MAES feature search",
@@ -66,5 +74,5 @@
     "confirmation": "higher 15-run mean GAUC, at least 4/5 seeds not below H2 in every fold, paired user-cluster delta-GAUC CI lower bound above zero, no unacceptable calibration regression"
   },
   "failure_action": "Keep H2-history-behavior and stop search.",
-  "next_phase": "Run the bounded G-R candidate-aware EEG recovery plan, then revise the Stage-T target before any training."
+  "next_phase": "Implement bounded Stage-T training-stability optimization around the frozen EEG candidate; keep locked test inaccessible."
 }
