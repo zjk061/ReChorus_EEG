@@ -1,0 +1,306 @@
+{
+  "phase": "V",
+  "split_version": "protocol_a_rollv2_cv3",
+  "locked_test_accessed": false,
+  "gate_v_definition": "AUC-only real EEG candidate must beat the current frozen incumbent GAUC, retain non-zero EEG sensitivity, and keep mandatory controls; calibration metrics are logged only",
+  "U0": {
+    "phase": "U0",
+    "split_version": "protocol_a_rollv2_cv3",
+    "locked_test_accessed": false,
+    "fold_audit": [
+      {
+        "fold": 1,
+        "train_count": 1786,
+        "dev_count": 349,
+        "train_dev_overlap": 0,
+        "locked_overlap": 0
+      },
+      {
+        "fold": 2,
+        "train_count": 2135,
+        "dev_count": 356,
+        "train_dev_overlap": 0,
+        "locked_overlap": 0
+      },
+      {
+        "fold": 3,
+        "train_count": 2491,
+        "dev_count": 357,
+        "train_dev_overlap": 0,
+        "locked_overlap": 0
+      }
+    ],
+    "stage_t_final_action": "keep_H2_history_behavior",
+    "stage_t_locked_test_accessed": false,
+    "stage_g_recovery_mean_gauc_by_mode": {
+      "causal_shuffle": 0.6111575584931447,
+      "no_eeg": 0.6025329576586558,
+      "real": 0.6106098789169059,
+      "zero": 0.6025329576586558
+    },
+    "stage_g_recovery_temporal_eeg_gain_proven": false,
+    "reference_backbone": "H2-history-behavior",
+    "mandatory_controls": [
+      "H2_E0",
+      "causal_shuffle",
+      "zero"
+    ],
+    "u0_passed": true
+  },
+  "assessments": [
+    {
+      "config": "V2C-dynamic-gated-hardneg-0p05",
+      "mean_metrics": {
+        "dev_gauc": 0.6122306138571919,
+        "dev_macro_auc": 0.6163698546701193,
+        "dev_auc": 0.6415277159481685,
+        "h2_gauc": 0.5998551700752021,
+        "delta_h2_gauc": 0.012375443781990021,
+        "dev_logloss": 0.6299560963120772,
+        "dev_brier": 0.2146071635820126,
+        "dev_ece": 0.05937887620926555,
+        "h2_logloss": 0.6448312027399624,
+        "h2_brier": 0.22090091961279978,
+        "h2_ece": 0.06364691702429785,
+        "correction_abs_mean": 0.178327419914745,
+        "eeg_gradient_norm": 0.17472284881061487,
+        "zero_sensitivity": 0.039596486389604654,
+        "shuffle_sensitivity": 0.019483602369695693
+      },
+      "fold_delta_h2_gauc": {
+        "1": 0.0009673852957434725,
+        "2": 0.027671619468494463,
+        "3": 0.008487326581732124
+      },
+      "folds_with_positive_h2_gain": 3,
+      "seed_wins_vs_h2": 6,
+      "run_count": 9,
+      "minimum_mean_gauc_gain": 0.005,
+      "calibration_relative_ratios": {
+        "logloss": 0.9769317825119517,
+        "brier": 0.9715086924861199,
+        "ece": 0.932941908036128
+      },
+      "calibration_relative_tolerance": 0.05,
+      "calibration_ok": true,
+      "sensitivity_ok": true,
+      "paired_bootstrap": {
+        "requested_replicates": 0,
+        "skipped": true
+      },
+      "temporal_independent_gain_proven": false,
+      "auc_only_selection": true,
+      "passed_gate_u_screen": true,
+      "incumbent_config": "V1-profile-dynamic-gated_cross_attention",
+      "incumbent_source": "docs\\v2\\stage_v_results\\decision.json",
+      "incumbent_gauc": 0.6160204758227728,
+      "delta_incumbent_gauc": -0.003789861965580843,
+      "beats_incumbent_gauc": false
+    },
+    {
+      "config": "V2C-dynamic-gated-pairwise-0p05",
+      "mean_metrics": {
+        "dev_gauc": 0.6115633836238037,
+        "dev_macro_auc": 0.6171511151008505,
+        "dev_auc": 0.6601424733349202,
+        "h2_gauc": 0.5969105617030819,
+        "delta_h2_gauc": 0.014652821920722,
+        "dev_logloss": 0.6214961155339931,
+        "dev_brier": 0.21022689468697953,
+        "dev_ece": 0.058250098521999395,
+        "h2_logloss": 0.6482143575417135,
+        "h2_brier": 0.22237021335531967,
+        "h2_ece": 0.058889557611164295,
+        "correction_abs_mean": 0.395349900264086,
+        "eeg_gradient_norm": 0.26836267206693815,
+        "zero_sensitivity": 0.08490568925238524,
+        "shuffle_sensitivity": 0.04494700310412251
+      },
+      "fold_delta_h2_gauc": {
+        "1": 0.007614345300912466,
+        "2": 0.022541486291486407,
+        "3": 0.013802634169767125
+      },
+      "folds_with_positive_h2_gain": 3,
+      "seed_wins_vs_h2": 9,
+      "run_count": 9,
+      "minimum_mean_gauc_gain": 0.005,
+      "calibration_relative_ratios": {
+        "logloss": 0.9587817799824018,
+        "brier": 0.9453914331190723,
+        "ece": 0.9891413840567946
+      },
+      "calibration_relative_tolerance": 0.05,
+      "calibration_ok": true,
+      "sensitivity_ok": true,
+      "paired_bootstrap": {
+        "requested_replicates": 0,
+        "skipped": true
+      },
+      "temporal_independent_gain_proven": false,
+      "auc_only_selection": true,
+      "passed_gate_u_screen": true,
+      "incumbent_config": "V1-profile-dynamic-gated_cross_attention",
+      "incumbent_source": "docs\\v2\\stage_v_results\\decision.json",
+      "incumbent_gauc": 0.6160204758227728,
+      "delta_incumbent_gauc": -0.004457092198969059,
+      "beats_incumbent_gauc": false
+    },
+    {
+      "config": "V2C-gated_cross_attention-hardneg-0p05",
+      "mean_metrics": {
+        "dev_gauc": 0.6071651033600927,
+        "dev_macro_auc": 0.6117322177259346,
+        "dev_auc": 0.6496049887781543,
+        "h2_gauc": 0.5968354030527919,
+        "delta_h2_gauc": 0.010329700307300824,
+        "dev_logloss": 0.6256245663796025,
+        "dev_brier": 0.21278307217888975,
+        "dev_ece": 0.06349374805005509,
+        "h2_logloss": 0.6468348279398451,
+        "h2_brier": 0.22162137175869837,
+        "h2_ece": 0.06147281481575817,
+        "correction_abs_mean": 0.22866553878217624,
+        "eeg_gradient_norm": 0.1767735571274891,
+        "zero_sensitivity": 0.04852599666062613,
+        "shuffle_sensitivity": 0.029364413340267168
+      },
+      "fold_delta_h2_gauc": {
+        "1": 0.0,
+        "2": 0.01966371302308804,
+        "3": 0.011325387898814432
+      },
+      "folds_with_positive_h2_gain": 2,
+      "seed_wins_vs_h2": 9,
+      "run_count": 9,
+      "minimum_mean_gauc_gain": 0.005,
+      "calibration_relative_ratios": {
+        "logloss": 0.9672091534900852,
+        "brier": 0.9601198227875254,
+        "ece": 1.032875235018177
+      },
+      "calibration_relative_tolerance": 0.05,
+      "calibration_ok": true,
+      "sensitivity_ok": true,
+      "paired_bootstrap": {
+        "requested_replicates": 0,
+        "skipped": true
+      },
+      "temporal_independent_gain_proven": false,
+      "auc_only_selection": true,
+      "passed_gate_u_screen": true,
+      "incumbent_config": "V1-profile-dynamic-gated_cross_attention",
+      "incumbent_source": "docs\\v2\\stage_v_results\\decision.json",
+      "incumbent_gauc": 0.6160204758227728,
+      "delta_incumbent_gauc": -0.008855372462680089,
+      "beats_incumbent_gauc": false
+    },
+    {
+      "config": "V2C-gated_cross_attention-pairwise-0p05",
+      "mean_metrics": {
+        "dev_gauc": 0.6092515636215733,
+        "dev_macro_auc": 0.6124615520184302,
+        "dev_auc": 0.6352613024847676,
+        "h2_gauc": 0.5985106639973695,
+        "delta_h2_gauc": 0.010740899624203807,
+        "dev_logloss": 0.6332229519202863,
+        "dev_brier": 0.21567859824039165,
+        "dev_ece": 0.062095226866467845,
+        "h2_logloss": 0.6442507152379098,
+        "h2_brier": 0.22045716508549718,
+        "h2_ece": 0.06085185927525158,
+        "correction_abs_mean": 0.18359621038851198,
+        "eeg_gradient_norm": 0.069165922620384,
+        "zero_sensitivity": 0.03417363072255992,
+        "shuffle_sensitivity": 0.022848931472253753
+      },
+      "fold_delta_h2_gauc": {
+        "1": 0.0,
+        "2": 0.011125090187590189,
+        "3": 0.021097608685021235
+      },
+      "folds_with_positive_h2_gain": 2,
+      "seed_wins_vs_h2": 9,
+      "run_count": 9,
+      "minimum_mean_gauc_gain": 0.005,
+      "calibration_relative_ratios": {
+        "logloss": 0.9828828078001417,
+        "brier": 0.9783242842515356,
+        "ece": 1.020432696815263
+      },
+      "calibration_relative_tolerance": 0.05,
+      "calibration_ok": true,
+      "sensitivity_ok": true,
+      "paired_bootstrap": {
+        "requested_replicates": 0,
+        "skipped": true
+      },
+      "temporal_independent_gain_proven": false,
+      "auc_only_selection": true,
+      "passed_gate_u_screen": true,
+      "incumbent_config": "V1-profile-dynamic-gated_cross_attention",
+      "incumbent_source": "docs\\v2\\stage_v_results\\decision.json",
+      "incumbent_gauc": 0.6160204758227728,
+      "delta_incumbent_gauc": -0.006768912201199462,
+      "beats_incumbent_gauc": false
+    }
+  ],
+  "incumbent_stage_u_candidate": {
+    "config": "V1-profile-dynamic-gated_cross_attention",
+    "dev_gauc": 0.6160204758227728,
+    "source": "docs\\v2\\stage_v_results\\decision.json"
+  },
+  "best_raw_gauc_candidate": {
+    "config": "V2C-dynamic-gated-hardneg-0p05",
+    "mean_metrics": {
+      "dev_gauc": 0.6122306138571919,
+      "dev_macro_auc": 0.6163698546701193,
+      "dev_auc": 0.6415277159481685,
+      "h2_gauc": 0.5998551700752021,
+      "delta_h2_gauc": 0.012375443781990021,
+      "dev_logloss": 0.6299560963120772,
+      "dev_brier": 0.2146071635820126,
+      "dev_ece": 0.05937887620926555,
+      "h2_logloss": 0.6448312027399624,
+      "h2_brier": 0.22090091961279978,
+      "h2_ece": 0.06364691702429785,
+      "correction_abs_mean": 0.178327419914745,
+      "eeg_gradient_norm": 0.17472284881061487,
+      "zero_sensitivity": 0.039596486389604654,
+      "shuffle_sensitivity": 0.019483602369695693
+    },
+    "fold_delta_h2_gauc": {
+      "1": 0.0009673852957434725,
+      "2": 0.027671619468494463,
+      "3": 0.008487326581732124
+    },
+    "folds_with_positive_h2_gain": 3,
+    "seed_wins_vs_h2": 6,
+    "run_count": 9,
+    "minimum_mean_gauc_gain": 0.005,
+    "calibration_relative_ratios": {
+      "logloss": 0.9769317825119517,
+      "brier": 0.9715086924861199,
+      "ece": 0.932941908036128
+    },
+    "calibration_relative_tolerance": 0.05,
+    "calibration_ok": true,
+    "sensitivity_ok": true,
+    "paired_bootstrap": {
+      "requested_replicates": 0,
+      "skipped": true
+    },
+    "temporal_independent_gain_proven": false,
+    "auc_only_selection": true,
+    "passed_gate_u_screen": true,
+    "incumbent_config": "V1-profile-dynamic-gated_cross_attention",
+    "incumbent_source": "docs\\v2\\stage_v_results\\decision.json",
+    "incumbent_gauc": 0.6160204758227728,
+    "delta_incumbent_gauc": -0.003789861965580843,
+    "beats_incumbent_gauc": false
+  },
+  "best_candidate": null,
+  "gate_v_passed": false,
+  "final_action": "stage_v_no_auc_upgrade_keep_incumbent::V1-profile-dynamic-gated_cross_attention",
+  "interpretation_rule": "If best_candidate.temporal_independent_gain_proven is false, report it only as EEG distribution/state performance gain, not proven temporal cognitive gain."
+}

@@ -1,0 +1,32 @@
+{
+  "phase": "V2-D",
+  "split_version": "protocol_a_rollv2_cv3",
+  "locked_test_accessed": false,
+  "target_auc_floor": 0.8,
+  "current_champion": "V1-profile-dynamic-gated_cross_attention",
+  "current_champion_gauc": 0.6160204758227728,
+  "current_champion_gap_to_0p8": 0.1839795241772273,
+  "v2c_best_config": "V2C-dynamic-gated-hardneg-0p05",
+  "v2c_best_gauc": 0.6122306138571919,
+  "v2c_best_gap_to_0p8": 0.18776938614280814,
+  "best_non_oracle_candidate": "V2C-dynamic-gated-pairwise-0p05",
+  "best_non_oracle_gauc": 0.588810692688461,
+  "fold_oracle_gauc": 0.5832815652213891,
+  "fold_user_oracle_gauc": 0.6165486669677329,
+  "oracle_can_reach_0p8": false,
+  "fold_real_gauc_range": 0.06512811434631816,
+  "median_fold_user_sample_count": 12.0,
+  "invalid_fold_user_auc_rate": 0.13333333333333333,
+  "low_sample_fold_user_rate_lt10": 0.13333333333333333,
+  "zero_sensitivity_fold_gap": 0.06536025805459157,
+  "bottleneck_assessment": {
+    "model_capacity_or_optimization": "plausible_local_signal",
+    "eeg_feature_expression": "used_but_unstable_across_folds",
+    "user_sample_limit": "strong",
+    "rolling_cv_distribution_drift": "strong",
+    "label_noise_or_task_ceiling": "cannot_be_ruled_out"
+  },
+  "conclusion": "V2-C did not fail because EEG was unused; it failed because EEG gains are fold/seed unstable. Fold2 contains recoverable signal, but fold1/fold3 and small per-user validation slices keep the stable mean GAUC far below 0.8.",
+  "final_action": "v2d_no_model_upgrade_keep::V1-profile-dynamic-gated_cross_attention",
+  "next_action": "enter_v2e_controlled_feature_and_loss_repair"
+}

@@ -1,0 +1,11 @@
+{
+  "phase": "V2-D",
+  "split_version": "protocol_a_rollv2_cv3",
+  "locked_test_accessed": false,
+  "current_champion": "V1-profile-dynamic-gated_cross_attention",
+  "current_champion_gauc": 0.6160204758227728,
+  "target_auc_floor": 0.8,
+  "stage_v2d_produces_model_candidate": false,
+  "final_action": "v2d_no_model_upgrade_keep::V1-profile-dynamic-gated_cross_attention",
+  "next_action": "enter_v2e_controlled_feature_and_loss_repair"
+}
