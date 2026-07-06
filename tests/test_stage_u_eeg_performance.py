@@ -17,6 +17,7 @@ from baselines.stage_u import (  # noqa: E402
     CONTROL_NAMES,
     StageUConfig,
     fit_stage_u,
+    same_user_pairwise_auc_loss,
     stage_u_development_configs,
 )
 
@@ -44,6 +45,24 @@ class StageUEEGPerformanceTests(unittest.TestCase):
             StageUConfig("bad", interaction="wide_open").validate()
         with self.assertRaises(ValueError):
             StageUConfig("bad", hidden_size=64).validate()
+        with self.assertRaises(ValueError):
+            StageUConfig("bad", pairwise_weight=0.3).validate()
+
+    def test_same_user_pairwise_auc_loss_supports_hard_negatives(self):
+        import torch
+
+        logits = torch.tensor([0.2, 0.8, 0.7, 0.1, 0.4], requires_grad=True)
+        labels = torch.tensor([0.0, 1.0, 0.0, 1.0, 1.0])
+        users = np.asarray([1, 1, 1, 1, 2])
+        loss, paired_users = same_user_pairwise_auc_loss(
+            logits,
+            labels,
+            users,
+            torch.Generator().manual_seed(3),
+            hard_negative=True,
+        )
+        self.assertEqual(paired_users, 1)
+        self.assertTrue(torch.isfinite(loss))
 
     def test_stage_u_smoke_outputs_controls_and_audit_fields(self):
         result = fit_stage_u(
@@ -103,6 +122,20 @@ class StageUEEGPerformanceTests(unittest.TestCase):
             self.assertTrue(config.use_profile)
         self.assertIn("gated_cross_attention", {config.interaction for config in configs})
 
+    def test_v2c_suite_registers_auc_retraining_configs(self):
+        configs = stage_u_development_configs("v2c")
+        self.assertEqual(
+            [config.name for config in configs],
+            [
+                "V2C-gated_cross_attention-pairwise-0p05",
+                "V2C-gated_cross_attention-hardneg-0p05",
+                "V2C-dynamic-gated-pairwise-0p05",
+                "V2C-dynamic-gated-hardneg-0p05",
+            ],
+        )
+        self.assertTrue(all(config.pairwise_weight == 0.05 for config in configs))
+        self.assertEqual(sum(config.hard_negative_pairs for config in configs), 2)
+
     def test_stage_v1_gated_attention_smoke_outputs_controls(self):
         result = fit_stage_u(
             self.data,
@@ -124,6 +157,30 @@ class StageUEEGPerformanceTests(unittest.TestCase):
         self.assertEqual(result.metadata["interaction"], "gated_cross_attention")
         self.assertTrue(result.metadata["uses_profile"])
         self.assertTrue(result.metadata["uses_dynamic"])
+
+    def test_stage_v2c_pairwise_smoke_records_auc_training_fields(self):
+        result = fit_stage_u(
+            self.data,
+            self.dataset_dir,
+            seed=31,
+            config=StageUConfig(
+                "V2C-gated_cross_attention-hardneg-0p05",
+                use_profile=True,
+                use_dynamic=True,
+                interaction="gated_cross_attention",
+                pairwise_weight=0.05,
+                hard_negative_pairs=True,
+            ),
+            max_epochs=1,
+            patience=1,
+            recovery_epochs=1,
+            recovery_patience=1,
+        )
+        self.assertEqual(set(result.predictions), {"real", *CONTROL_NAMES})
+        self.assertEqual(result.metadata["pairwise_weight"], 0.05)
+        self.assertTrue(result.metadata["hard_negative_pairs"])
+        self.assertIn("pairwise_loss", result.metadata["eeg_training_history"][0])
+        self.assertIn("paired_users", result.metadata["eeg_training_history"][0])
 
 
 if __name__ == "__main__":

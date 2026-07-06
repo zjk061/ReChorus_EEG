@@ -1,0 +1,37 @@
+{
+  "target_auc_floor": 0.8,
+  "current_champion": "V1-profile-dynamic-gated_cross_attention",
+  "current_champion_formal_metrics": {
+    "config": "V1-profile-dynamic-gated_cross_attention",
+    "GAUC": 0.6160204758227728,
+    "MACRO_AUC": 0.6193525280446578,
+    "AUC": 0.654840267665957,
+    "source": "D:\\TsingHuaEEGRec\\Github\\docs\\v2\\stage_v_results\\decision.json"
+  },
+  "current_champion_fold_ensemble_metrics": {
+    "GAUC": 0.5576189252593625,
+    "MACRO_AUC": 0.5635774559615261,
+    "AUC": 0.6607498026835044,
+    "valid_user_count": 30,
+    "excluded_user_count": 0
+  },
+  "current_champion_gauc_gap_to_0p8": 0.1839795241772273,
+  "current_champion_macro_auc_gap_to_0p8": 0.18064747195534225,
+  "current_champion_global_auc_gap_to_0p8": 0.145159732334043,
+  "current_champion_fold_ensemble_gauc_gap_to_0p8": 0.24238107474063753,
+  "event_count": 1062,
+  "user_count": 30,
+  "valid_gauc_user_count": 30,
+  "excluded_gauc_user_count": 0,
+  "median_dev_events_per_user": 36.0,
+  "min_dev_events_per_user": 12,
+  "max_dev_events_per_user": 45,
+  "median_positive_per_user": 10.0,
+  "median_negative_per_user": 25.0,
+  "all_positive_user_count": 0,
+  "all_negative_user_count": 0,
+  "valid_user_auc_mean": 0.5635774559615261,
+  "valid_user_auc_std": 0.13924349666782815,
+  "diagnosis": "current AUC-class metrics are far below 0.8; treat this stage as reachability diagnosis plus incremental AUC search, not final qualification",
+  "locked_test_accessed": false
+}

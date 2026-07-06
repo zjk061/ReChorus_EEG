@@ -1,0 +1,2 @@
+candidate,source,gauc,macro_auc,global_auc,gauc_gap_to_target,macro_auc_gap_to_target,global_auc_gap_to_target,valid_user_count,excluded_user_count
+V1-profile-dynamic-gated,pred::V1-profile-dynamic-gated,0.6092353044914687,0.6154886867941626,0.6738239936858721,0.19076469550853137,0.18451131320583747,0.12617600631412795,30,0

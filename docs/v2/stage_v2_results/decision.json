@@ -1,0 +1,21 @@
+{
+  "phase": "V2",
+  "split_version": "protocol_a_rollv2_cv3",
+  "locked_test_accessed": false,
+  "target_auc_floor": 0.8,
+  "current_champion": "V1-profile-dynamic-gated_cross_attention",
+  "current_champion_formal_gauc": 0.6160204758227728,
+  "current_champion_fold_ensemble_gauc": 0.5576189252593625,
+  "diagnostic_best_candidate": "V1-profile-dynamic-gated",
+  "best_candidate_metrics": {
+    "GAUC": 0.6092353044914687,
+    "MACRO_AUC": 0.6154886867941626,
+    "AUC": 0.6738239936858721
+  },
+  "best_candidate_gauc_gap_to_0p8": 0.19076469550853137,
+  "formal_current_champion_gauc_gap_to_0p8": 0.1839795241772273,
+  "beats_current_champion": false,
+  "target_auc_floor_met": false,
+  "final_action": "stage_v2_no_auc_upgrade_keep::V1-profile-dynamic-gated_cross_attention",
+  "next_action": "enter_v2c_pairwise_listwise_hard_negative_eeg_feature_retraining"
+}

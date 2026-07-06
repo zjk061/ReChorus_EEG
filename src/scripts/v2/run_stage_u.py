@@ -34,7 +34,7 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--dataset_dir", type=Path, default=ROOT / "src/data/EEGsvRec_eeg_v2")
     parser.add_argument("--output_dir", type=Path)
     parser.add_argument("--report_dir", type=Path)
-    parser.add_argument("--suite", choices=["u0", "u1", "u2", "u3", "u1_u2", "v1", "all"], default="u1")
+    parser.add_argument("--suite", choices=["u0", "u1", "u2", "u3", "u1_u2", "v1", "v2c", "all"], default="u1")
     parser.add_argument("--seeds", nargs="+", type=int)
     parser.add_argument("--max_epochs", type=int, default=60)
     parser.add_argument("--patience", type=int, default=8)
@@ -48,11 +48,17 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()
     if args.output_dir is None:
-        args.output_dir = ROOT / ("log/v2/stage_v" if args.suite.startswith("v") else "log/v2/stage_u")
+        if args.suite.startswith("v2"):
+            args.output_dir = ROOT / "log/v2/stage_v2c"
+        else:
+            args.output_dir = ROOT / ("log/v2/stage_v" if args.suite.startswith("v") else "log/v2/stage_u")
     if args.report_dir is None:
-        args.report_dir = ROOT / (
-            "docs/v2/stage_v_results" if args.suite.startswith("v") else "docs/v2/stage_u_results"
-        )
+        if args.suite.startswith("v2"):
+            args.report_dir = ROOT / "docs/v2/stage_v2c_results"
+        else:
+            args.report_dir = ROOT / (
+                "docs/v2/stage_v_results" if args.suite.startswith("v") else "docs/v2/stage_u_results"
+            )
     return args
 
 
@@ -401,6 +407,21 @@ def _stage_u_incumbent() -> dict[str, Any] | None:
     }
 
 
+def _stage_v_incumbent() -> dict[str, Any] | None:
+    path = ROOT / "docs/v2/stage_v_results/decision.json"
+    if not path.exists():
+        return None
+    decision = json.loads(path.read_text(encoding="utf-8"))
+    candidate = decision.get("best_candidate")
+    if not candidate:
+        return None
+    return {
+        "config": candidate.get("config"),
+        "dev_gauc": candidate.get("mean_metrics", {}).get("dev_gauc"),
+        "source": str(path.relative_to(ROOT)),
+    }
+
+
 def main() -> None:
     args = arguments()
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -409,7 +430,7 @@ def main() -> None:
     phase = "V" if args.suite.startswith("v") else "U"
     gate_definition_key = "gate_v_definition" if phase == "V" else "gate_u_definition"
     gate_definition = (
-        "AUC-only real EEG candidate must beat the frozen Stage-U incumbent GAUC, "
+        "AUC-only real EEG candidate must beat the current frozen incumbent GAUC, "
         "retain non-zero EEG sensitivity, and keep mandatory controls; calibration metrics are logged only"
         if phase == "V"
         else (
@@ -449,24 +470,32 @@ def main() -> None:
         _assess_config(frame, ensembles, config, args.bootstrap)
         for config in sorted(frame.config.unique())
     ]
-    incumbent = _stage_u_incumbent() if phase == "V" else None
+    incumbent = None
+    if phase == "V":
+        incumbent = _stage_v_incumbent() if args.suite.startswith("v2") else _stage_u_incumbent()
     if incumbent and incumbent.get("dev_gauc") is not None:
         incumbent_gauc = float(incumbent["dev_gauc"])
         for item in assessments:
-            item["incumbent_stage_u_config"] = incumbent["config"]
-            item["incumbent_stage_u_gauc"] = incumbent_gauc
-            item["delta_incumbent_stage_u_gauc"] = float(item["mean_metrics"]["dev_gauc"] - incumbent_gauc)
-            item["beats_incumbent_stage_u_gauc"] = bool(item["delta_incumbent_stage_u_gauc"] > 0)
+            item["incumbent_config"] = incumbent["config"]
+            item["incumbent_source"] = incumbent["source"]
+            item["incumbent_gauc"] = incumbent_gauc
+            item["delta_incumbent_gauc"] = float(item["mean_metrics"]["dev_gauc"] - incumbent_gauc)
+            item["beats_incumbent_gauc"] = bool(item["delta_incumbent_gauc"] > 0)
+            if args.suite.startswith("v1"):
+                item["incumbent_stage_u_config"] = incumbent["config"]
+                item["incumbent_stage_u_gauc"] = incumbent_gauc
+                item["delta_incumbent_stage_u_gauc"] = item["delta_incumbent_gauc"]
+                item["beats_incumbent_stage_u_gauc"] = item["beats_incumbent_gauc"]
     passing = [item for item in assessments if item["passed_gate_u_screen"]]
     if phase == "V" and incumbent:
-        passing = [item for item in passing if item.get("beats_incumbent_stage_u_gauc")]
+        passing = [item for item in passing if item.get("beats_incumbent_gauc")]
     if passing:
         best = max(passing, key=lambda item: item["mean_metrics"]["dev_gauc"])
         final_action = f"freeze_stage_{phase.lower()}_candidate::{best['config']}"
     else:
         best = None
         if phase == "V" and incumbent:
-            final_action = f"stage_v_no_auc_upgrade_keep_stage_u_candidate::{incumbent['config']}"
+            final_action = f"stage_v_no_auc_upgrade_keep_incumbent::{incumbent['config']}"
         else:
             final_action = f"stage_{phase.lower()}_no_performance_candidate_keep_H2_history_behavior"
     decisions["assessments"] = assessments
