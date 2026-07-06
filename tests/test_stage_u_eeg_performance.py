@@ -77,6 +77,16 @@ class StageUEEGPerformanceTests(unittest.TestCase):
             config.validate()
             self.assertNotEqual(config.advanced_encoder, "none")
 
+    def test_u2_uses_u1_profile_representation_for_interaction_screen(self):
+        names = [config.name for config in stage_u_development_configs("u2")]
+        self.assertEqual(
+            names,
+            ["U2-profile-bilinear", "U2-profile-film", "U2-profile-gated", "U2-profile-cross_attention"],
+        )
+        for config in stage_u_development_configs("u2"):
+            self.assertTrue(config.use_profile)
+            self.assertFalse(config.use_dynamic)
+
 
 if __name__ == "__main__":
     unittest.main()

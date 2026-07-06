@@ -46,5 +46,502 @@
       "zero"
     ],
     "u0_passed": true
-  }
+  },
+  "assessments": [
+    {
+      "config": "U1-dynamic",
+      "mean_metrics": {
+        "dev_gauc": 0.6002697610692029,
+        "h2_gauc": 0.5936141192558027,
+        "delta_h2_gauc": 0.006655641813400294,
+        "dev_logloss": 0.639268026458871,
+        "dev_brier": 0.2181823051226697,
+        "dev_ece": 0.061651726454022185,
+        "h2_logloss": 0.6490576534287897,
+        "h2_brier": 0.22277386031624116,
+        "h2_ece": 0.0600736474224162,
+        "correction_abs_mean": 0.17078311343276356,
+        "eeg_gradient_norm": 0.18536705589098515,
+        "zero_sensitivity": 0.03657374525856641,
+        "shuffle_sensitivity": 0.022810179259775194
+      },
+      "fold_delta_h2_gauc": {
+        "1": 0.003752521662969318,
+        "2": 0.005169439935064912,
+        "3": 0.011044963842166652
+      },
+      "folds_with_positive_h2_gain": 3,
+      "seed_wins_vs_h2": 8,
+      "run_count": 9,
+      "minimum_mean_gauc_gain": 0.005,
+      "calibration_relative_ratios": {
+        "logloss": 0.9849171688859952,
+        "brier": 0.9793891653758054,
+        "ece": 1.0262690730347952
+      },
+      "calibration_relative_tolerance": 0.05,
+      "calibration_ok": true,
+      "sensitivity_ok": true,
+      "paired_bootstrap": {
+        "requested_replicates": 0,
+        "skipped": true
+      },
+      "temporal_independent_gain_proven": false,
+      "passed_gate_u_screen": true
+    },
+    {
+      "config": "U1-profile",
+      "mean_metrics": {
+        "dev_gauc": 0.6109510683527808,
+        "h2_gauc": 0.6006915079304634,
+        "delta_h2_gauc": 0.010259560422317423,
+        "dev_logloss": 0.634447919132921,
+        "dev_brier": 0.2166532581014027,
+        "dev_ece": 0.06192852952151075,
+        "h2_logloss": 0.6432285882878108,
+        "h2_brier": 0.22059036666990448,
+        "h2_ece": 0.06590833711444764,
+        "correction_abs_mean": 0.1259703690496584,
+        "eeg_gradient_norm": 0.10383920769895424,
+        "zero_sensitivity": 0.02525602704069267,
+        "shuffle_sensitivity": 0.005599192103545647
+      },
+      "fold_delta_h2_gauc": {
+        "1": 0.015516142232560112,
+        "2": 0.00788029100529101,
+        "3": 0.007382248029101146
+      },
+      "folds_with_positive_h2_gain": 3,
+      "seed_wins_vs_h2": 8,
+      "run_count": 9,
+      "minimum_mean_gauc_gain": 0.005,
+      "calibration_relative_ratios": {
+        "logloss": 0.9863490688772668,
+        "brier": 0.9821519469415755,
+        "ece": 0.9396160217784574
+      },
+      "calibration_relative_tolerance": 0.05,
+      "calibration_ok": true,
+      "sensitivity_ok": true,
+      "paired_bootstrap": {
+        "requested_replicates": 0,
+        "skipped": true
+      },
+      "temporal_independent_gain_proven": false,
+      "passed_gate_u_screen": true
+    },
+    {
+      "config": "U1-profile-dynamic",
+      "mean_metrics": {
+        "dev_gauc": 0.6058304876561497,
+        "h2_gauc": 0.5974962260733416,
+        "delta_h2_gauc": 0.008334261582807959,
+        "dev_logloss": 0.6349767754166251,
+        "dev_brier": 0.21653349244492334,
+        "dev_ece": 0.0627575460304785,
+        "h2_logloss": 0.6434459794772732,
+        "h2_brier": 0.2206144767177823,
+        "h2_ece": 0.062188752249259044,
+        "correction_abs_mean": 0.14146709413681594,
+        "eeg_gradient_norm": 0.1630418028007833,
+        "zero_sensitivity": 0.03095376219264128,
+        "shuffle_sensitivity": 0.014278849239215359
+      },
+      "fold_delta_h2_gauc": {
+        "1": 0.006586081138319895,
+        "2": 0.003594200937950968,
+        "3": 0.014822502672153015
+      },
+      "folds_with_positive_h2_gain": 3,
+      "seed_wins_vs_h2": 8,
+      "run_count": 9,
+      "minimum_mean_gauc_gain": 0.005,
+      "calibration_relative_ratios": {
+        "logloss": 0.9868377387834044,
+        "brier": 0.9815017385369524,
+        "ece": 1.0091462484878242
+      },
+      "calibration_relative_tolerance": 0.05,
+      "calibration_ok": true,
+      "sensitivity_ok": true,
+      "paired_bootstrap": {
+        "requested_replicates": 0,
+        "skipped": true
+      },
+      "temporal_independent_gain_proven": false,
+      "passed_gate_u_screen": true
+    },
+    {
+      "config": "U1-profile-dynamic-film",
+      "mean_metrics": {
+        "dev_gauc": 0.6125490503488327,
+        "h2_gauc": 0.5991566650423725,
+        "delta_h2_gauc": 0.013392385306460019,
+        "dev_logloss": 0.6327325110377156,
+        "dev_brier": 0.21557630361237523,
+        "dev_ece": 0.07034333824922819,
+        "h2_logloss": 0.6414014498603259,
+        "h2_brier": 0.21952110953379092,
+        "h2_ece": 0.0559169007653363,
+        "correction_abs_mean": 0.1919476743722852,
+        "eeg_gradient_norm": 0.15188321044343697,
+        "zero_sensitivity": 0.054572948377578236,
+        "shuffle_sensitivity": 0.025469876954654563
+      },
+      "fold_delta_h2_gauc": {
+        "1": 0.0041163949372904724,
+        "2": 0.002800024050023997,
+        "3": 0.033260736932065584
+      },
+      "folds_with_positive_h2_gain": 3,
+      "seed_wins_vs_h2": 8,
+      "run_count": 9,
+      "minimum_mean_gauc_gain": 0.005,
+      "calibration_relative_ratios": {
+        "logloss": 0.9864843791287062,
+        "brier": 0.982029947234717,
+        "ece": 1.2579978018530498
+      },
+      "calibration_relative_tolerance": 0.05,
+      "calibration_ok": false,
+      "sensitivity_ok": true,
+      "paired_bootstrap": {
+        "requested_replicates": 0,
+        "skipped": true
+      },
+      "temporal_independent_gain_proven": false,
+      "passed_gate_u_screen": false
+    },
+    {
+      "config": "U2-profile-bilinear",
+      "mean_metrics": {
+        "dev_gauc": 0.6109510683527808,
+        "h2_gauc": 0.6006915079304634,
+        "delta_h2_gauc": 0.010259560422317423,
+        "dev_logloss": 0.634447919132921,
+        "dev_brier": 0.2166532581014027,
+        "dev_ece": 0.06192852952151075,
+        "h2_logloss": 0.6432285882878108,
+        "h2_brier": 0.22059036666990448,
+        "h2_ece": 0.06590833711444764,
+        "correction_abs_mean": 0.1259703690496584,
+        "eeg_gradient_norm": 0.10383920769895424,
+        "zero_sensitivity": 0.02525602704069267,
+        "shuffle_sensitivity": 0.005599192103545647
+      },
+      "fold_delta_h2_gauc": {
+        "1": 0.015516142232560112,
+        "2": 0.00788029100529101,
+        "3": 0.007382248029101146
+      },
+      "folds_with_positive_h2_gain": 3,
+      "seed_wins_vs_h2": 8,
+      "run_count": 9,
+      "minimum_mean_gauc_gain": 0.005,
+      "calibration_relative_ratios": {
+        "logloss": 0.9863490688772668,
+        "brier": 0.9821519469415755,
+        "ece": 0.9396160217784574
+      },
+      "calibration_relative_tolerance": 0.05,
+      "calibration_ok": true,
+      "sensitivity_ok": true,
+      "paired_bootstrap": {
+        "requested_replicates": 0,
+        "skipped": true
+      },
+      "temporal_independent_gain_proven": false,
+      "passed_gate_u_screen": true
+    },
+    {
+      "config": "U2-profile-cross_attention",
+      "mean_metrics": {
+        "dev_gauc": 0.6128493096945389,
+        "h2_gauc": 0.6024726006787374,
+        "delta_h2_gauc": 0.010376709015801554,
+        "dev_logloss": 0.6332989763722812,
+        "dev_brier": 0.21587424590866688,
+        "dev_ece": 0.06125174638110916,
+        "h2_logloss": 0.6427661163168081,
+        "h2_brier": 0.22031024716419664,
+        "h2_ece": 0.05680656536741172,
+        "correction_abs_mean": 0.12170234088423765,
+        "eeg_gradient_norm": 0.15421009535668131,
+        "zero_sensitivity": 0.02565428333926118,
+        "shuffle_sensitivity": 0.009814936165235445
+      },
+      "fold_delta_h2_gauc": {
+        "1": 0.013206083579217856,
+        "2": 0.001494558682058648,
+        "3": 0.016429484786128157
+      },
+      "folds_with_positive_h2_gain": 3,
+      "seed_wins_vs_h2": 6,
+      "run_count": 9,
+      "minimum_mean_gauc_gain": 0.005,
+      "calibration_relative_ratios": {
+        "logloss": 0.9852712523199328,
+        "brier": 0.9798647529444074,
+        "ece": 1.0782511842591966
+      },
+      "calibration_relative_tolerance": 0.05,
+      "calibration_ok": false,
+      "sensitivity_ok": true,
+      "paired_bootstrap": {
+        "requested_replicates": 0,
+        "skipped": true
+      },
+      "temporal_independent_gain_proven": false,
+      "passed_gate_u_screen": false
+    },
+    {
+      "config": "U2-profile-film",
+      "mean_metrics": {
+        "dev_gauc": 0.6110317484927471,
+        "h2_gauc": 0.6024726006787374,
+        "delta_h2_gauc": 0.008559147814009805,
+        "dev_logloss": 0.6299341276876431,
+        "dev_brier": 0.21437688738912553,
+        "dev_ece": 0.054285425482913506,
+        "h2_logloss": 0.6427661163168081,
+        "h2_brier": 0.22031024716419664,
+        "h2_ece": 0.05680656536741172,
+        "correction_abs_mean": 0.1467892905865382,
+        "eeg_gradient_norm": 0.13934684252049004,
+        "zero_sensitivity": 0.0286785981321979,
+        "shuffle_sensitivity": 0.009868948044135727
+      },
+      "fold_delta_h2_gauc": {
+        "1": 0.01660704414435747,
+        "2": -9.620009620051976e-06,
+        "3": 0.009080019307292
+      },
+      "folds_with_positive_h2_gain": 2,
+      "seed_wins_vs_h2": 8,
+      "run_count": 9,
+      "minimum_mean_gauc_gain": 0.005,
+      "calibration_relative_ratios": {
+        "logloss": 0.9800363020025151,
+        "brier": 0.9730681625051739,
+        "ece": 0.9556188643303452
+      },
+      "calibration_relative_tolerance": 0.05,
+      "calibration_ok": true,
+      "sensitivity_ok": true,
+      "paired_bootstrap": {
+        "requested_replicates": 0,
+        "skipped": true
+      },
+      "temporal_independent_gain_proven": false,
+      "passed_gate_u_screen": true
+    },
+    {
+      "config": "U2-profile-gated",
+      "mean_metrics": {
+        "dev_gauc": 0.6115735683810356,
+        "h2_gauc": 0.6024726006787374,
+        "delta_h2_gauc": 0.009100967702298365,
+        "dev_logloss": 0.6236868276348129,
+        "dev_brier": 0.21128303098222523,
+        "dev_ece": 0.05389639053057185,
+        "h2_logloss": 0.6427661163168081,
+        "h2_brier": 0.22031024716419664,
+        "h2_ece": 0.05680656536741172,
+        "correction_abs_mean": 0.2894853963540906,
+        "eeg_gradient_norm": 0.14407399024371415,
+        "zero_sensitivity": 0.05797984716572399,
+        "shuffle_sensitivity": 0.020449009491749673
+      },
+      "fold_delta_h2_gauc": {
+        "1": 0.0061237104520686465,
+        "2": 0.008513821248196293,
+        "3": 0.012665371406630155
+      },
+      "folds_with_positive_h2_gain": 3,
+      "seed_wins_vs_h2": 8,
+      "run_count": 9,
+      "minimum_mean_gauc_gain": 0.005,
+      "calibration_relative_ratios": {
+        "logloss": 0.9703169034619874,
+        "brier": 0.959024982731541,
+        "ece": 0.948770449013815
+      },
+      "calibration_relative_tolerance": 0.05,
+      "calibration_ok": true,
+      "sensitivity_ok": true,
+      "paired_bootstrap": {
+        "requested_replicates": 0,
+        "skipped": true
+      },
+      "temporal_independent_gain_proven": false,
+      "passed_gate_u_screen": true
+    },
+    {
+      "config": "U3-fixed-gcn-film",
+      "mean_metrics": {
+        "dev_gauc": 0.5996917399266883,
+        "h2_gauc": 0.5942383407931079,
+        "delta_h2_gauc": 0.005453399133580499,
+        "dev_logloss": 0.641505157789555,
+        "dev_brier": 0.21945898524677415,
+        "dev_ece": 0.05736454296101243,
+        "h2_logloss": 0.6464989147804774,
+        "h2_brier": 0.22168739818057104,
+        "h2_ece": 0.05793174543582132,
+        "correction_abs_mean": 0.061848233512137085,
+        "eeg_gradient_norm": 0.06685636437405952,
+        "zero_sensitivity": 0.007740825895072905,
+        "shuffle_sensitivity": 0.002570769074736745
+      },
+      "fold_delta_h2_gauc": {
+        "1": 0.010710265411757939,
+        "2": 0.0009498632154881781,
+        "3": 0.0047000687734953805
+      },
+      "folds_with_positive_h2_gain": 3,
+      "seed_wins_vs_h2": 8,
+      "run_count": 9,
+      "minimum_mean_gauc_gain": 0.005,
+      "calibration_relative_ratios": {
+        "logloss": 0.9922756916109935,
+        "brier": 0.9899479494455441,
+        "ece": 0.9902091250567056
+      },
+      "calibration_relative_tolerance": 0.05,
+      "calibration_ok": true,
+      "sensitivity_ok": true,
+      "paired_bootstrap": {
+        "requested_replicates": 0,
+        "skipped": true
+      },
+      "temporal_independent_gain_proven": false,
+      "passed_gate_u_screen": true
+    },
+    {
+      "config": "U3-pca16-film",
+      "mean_metrics": {
+        "dev_gauc": 0.6029324294336319,
+        "h2_gauc": 0.5972593031790027,
+        "delta_h2_gauc": 0.005673126254629223,
+        "dev_logloss": 0.6389072498359951,
+        "dev_brier": 0.21851365062069428,
+        "dev_ece": 0.05223443063762252,
+        "h2_logloss": 0.6446098382393575,
+        "h2_brier": 0.221057917990718,
+        "h2_ece": 0.057319647590330064,
+        "correction_abs_mean": 0.05768651437958599,
+        "eeg_gradient_norm": 0.05272426803817519,
+        "zero_sensitivity": 0.006587878989396106,
+        "shuffle_sensitivity": 0.0016805086495171257
+      },
+      "fold_delta_h2_gauc": {
+        "1": 0.009899241167897865,
+        "2": 0.0021299678330927905,
+        "3": 0.004990169762897012
+      },
+      "folds_with_positive_h2_gain": 3,
+      "seed_wins_vs_h2": 8,
+      "run_count": 9,
+      "minimum_mean_gauc_gain": 0.005,
+      "calibration_relative_ratios": {
+        "logloss": 0.9911534263595201,
+        "brier": 0.9884904942869743,
+        "ece": 0.9112831783431022
+      },
+      "calibration_relative_tolerance": 0.05,
+      "calibration_ok": true,
+      "sensitivity_ok": true,
+      "paired_bootstrap": {
+        "requested_replicates": 0,
+        "skipped": true
+      },
+      "temporal_independent_gain_proven": false,
+      "passed_gate_u_screen": true
+    },
+    {
+      "config": "U3-small-transformer-film",
+      "mean_metrics": {
+        "dev_gauc": 0.6041419811581432,
+        "h2_gauc": 0.5997911865216378,
+        "delta_h2_gauc": 0.004350794636505463,
+        "dev_logloss": 0.6353398660486849,
+        "dev_brier": 0.21688361299152517,
+        "dev_ece": 0.057123723464214224,
+        "h2_logloss": 0.6420242320051431,
+        "h2_brier": 0.2200591111136373,
+        "h2_ece": 0.05707377334908524,
+        "correction_abs_mean": 0.0981710876415794,
+        "eeg_gradient_norm": 0.08420692555605444,
+        "zero_sensitivity": 0.018958573127747513,
+        "shuffle_sensitivity": 0.0047998990533718216
+      },
+      "fold_delta_h2_gauc": {
+        "1": 0.004758602370542597,
+        "2": 0.002792658730158696,
+        "3": 0.005501122808815095
+      },
+      "folds_with_positive_h2_gain": 3,
+      "seed_wins_vs_h2": 5,
+      "run_count": 9,
+      "minimum_mean_gauc_gain": 0.005,
+      "calibration_relative_ratios": {
+        "logloss": 0.9895886079944647,
+        "brier": 0.9855697948335694,
+        "ece": 1.0008751850841098
+      },
+      "calibration_relative_tolerance": 0.05,
+      "calibration_ok": true,
+      "sensitivity_ok": true,
+      "paired_bootstrap": {
+        "requested_replicates": 0,
+        "skipped": true
+      },
+      "temporal_independent_gain_proven": false,
+      "passed_gate_u_screen": false
+    }
+  ],
+  "best_candidate": {
+    "config": "U2-profile-gated",
+    "mean_metrics": {
+      "dev_gauc": 0.6115735683810356,
+      "h2_gauc": 0.6024726006787374,
+      "delta_h2_gauc": 0.009100967702298365,
+      "dev_logloss": 0.6236868276348129,
+      "dev_brier": 0.21128303098222523,
+      "dev_ece": 0.05389639053057185,
+      "h2_logloss": 0.6427661163168081,
+      "h2_brier": 0.22031024716419664,
+      "h2_ece": 0.05680656536741172,
+      "correction_abs_mean": 0.2894853963540906,
+      "eeg_gradient_norm": 0.14407399024371415,
+      "zero_sensitivity": 0.05797984716572399,
+      "shuffle_sensitivity": 0.020449009491749673
+    },
+    "fold_delta_h2_gauc": {
+      "1": 0.0061237104520686465,
+      "2": 0.008513821248196293,
+      "3": 0.012665371406630155
+    },
+    "folds_with_positive_h2_gain": 3,
+    "seed_wins_vs_h2": 8,
+    "run_count": 9,
+    "minimum_mean_gauc_gain": 0.005,
+    "calibration_relative_ratios": {
+      "logloss": 0.9703169034619874,
+      "brier": 0.959024982731541,
+      "ece": 0.948770449013815
+    },
+    "calibration_relative_tolerance": 0.05,
+    "calibration_ok": true,
+    "sensitivity_ok": true,
+    "paired_bootstrap": {
+      "requested_replicates": 0,
+      "skipped": true
+    },
+    "temporal_independent_gain_proven": false,
+    "passed_gate_u_screen": true
+  },
+  "gate_u_passed": true,
+  "final_action": "freeze_stage_u_candidate::U2-profile-gated",
+  "interpretation_rule": "If best_candidate.temporal_independent_gain_proven is false, report it only as EEG distribution/state performance gain, not proven temporal cognitive gain."
 }

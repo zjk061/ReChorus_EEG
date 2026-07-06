@@ -546,7 +546,7 @@ def stage_u_development_configs(suite: str) -> list[StageUConfig]:
         ]
     if suite == "u2":
         return [
-            StageUConfig(f"U2-profile-dynamic-{interaction}", True, True, interaction)
+            StageUConfig(f"U2-profile-{interaction}", True, False, interaction)
             for interaction in ("bilinear", "film", "gated", "cross_attention")
         ]
     if suite == "u3":

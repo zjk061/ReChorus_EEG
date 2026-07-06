@@ -34,13 +34,16 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--dataset_dir", type=Path, default=ROOT / "src/data/EEGsvRec_eeg_v2")
     parser.add_argument("--output_dir", type=Path, default=ROOT / "log/v2/stage_u")
     parser.add_argument("--report_dir", type=Path, default=ROOT / "docs/v2/stage_u_results")
-    parser.add_argument("--suite", choices=["u0", "u1", "u2", "u3", "all"], default="u1")
+    parser.add_argument("--suite", choices=["u0", "u1", "u2", "u3", "u1_u2", "all"], default="u1")
     parser.add_argument("--seeds", nargs="+", type=int)
     parser.add_argument("--max_epochs", type=int, default=60)
     parser.add_argument("--patience", type=int, default=8)
     parser.add_argument("--recovery_epochs", type=int, default=40)
     parser.add_argument("--recovery_patience", type=int, default=6)
-    parser.add_argument("--bootstrap", type=int, default=1000)
+    parser.add_argument(
+        "--bootstrap", type=int, default=0,
+        help="paired user-cluster bootstrap replicates; 0 skips CI for fast screening",
+    )
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--resume", action="store_true")
     return parser.parse_args()
@@ -327,11 +330,16 @@ def _assess_config(frame: pd.DataFrame, ensembles: dict[tuple[str, int, str], pd
     h2 = pd.concat([ensembles[(config, fold, "H2_E0")] for fold in folds], ignore_index=True)
     shuffled = pd.concat([ensembles[(config, fold, "causal_shuffle")] for fold in folds], ignore_index=True)
     zero = pd.concat([ensembles[(config, fold, "zero")] for fold in folds], ignore_index=True)
-    paired = {
-        "H2_E0": paired_cluster_bootstrap(h2, real, n_bootstrap=bootstrap, seed=2026),
-        "causal_shuffle": paired_cluster_bootstrap(shuffled, real, n_bootstrap=bootstrap, seed=2026),
-        "zero": paired_cluster_bootstrap(zero, real, n_bootstrap=bootstrap, seed=2026),
+    paired: dict[str, Any] = {
+        "requested_replicates": int(bootstrap),
+        "skipped": bool(bootstrap <= 0),
     }
+    if bootstrap > 0:
+        paired.update({
+            "H2_E0": paired_cluster_bootstrap(h2, real, n_bootstrap=bootstrap, seed=2026),
+            "causal_shuffle": paired_cluster_bootstrap(shuffled, real, n_bootstrap=bootstrap, seed=2026),
+            "zero": paired_cluster_bootstrap(zero, real, n_bootstrap=bootstrap, seed=2026),
+        })
     passed = bool(
         mean.delta_h2_gauc >= MIN_MEAN_GAUC_GAIN
         and folds_with_gain >= 2
@@ -352,7 +360,8 @@ def _assess_config(frame: pd.DataFrame, ensembles: dict[tuple[str, int, str], pd
         "sensitivity_ok": sensitivity_ok,
         "paired_bootstrap": paired,
         "temporal_independent_gain_proven": bool(
-            paired["causal_shuffle"]["intervals"]["DELTA_GAUC"]["lower"] > 0
+            bootstrap > 0
+            and paired["causal_shuffle"]["intervals"]["DELTA_GAUC"]["lower"] > 0
         ),
         "passed_gate_u_screen": passed,
     }
@@ -393,7 +402,12 @@ def main() -> None:
         raise ValueError("Stage-U development suites require three distinct seeds")
     rows: list[dict[str, Any]] = []
     ensembles: dict[tuple[str, int, str], pd.DataFrame] = {}
-    suites = ["u1", "u2", "u3"] if args.suite == "all" else [args.suite]
+    if args.suite == "all":
+        suites = ["u1", "u2", "u3"]
+    elif args.suite == "u1_u2":
+        suites = ["u1", "u2"]
+    else:
+        suites = [args.suite]
     for suite in suites:
         for config in stage_u_development_configs(suite):
             _run_config(suite.upper(), config, seeds, args, folds, rows, ensembles)
