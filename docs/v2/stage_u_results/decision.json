@@ -1,0 +1,50 @@
+{
+  "phase": "U",
+  "split_version": "protocol_a_rollv2_cv3",
+  "locked_test_accessed": false,
+  "gate_u_definition": "real EEG mean GAUC gain >= 0.005 vs H2/E0, at least 2/3 folds positive, calibration within 5%, and non-zero EEG sensitivity",
+  "U0": {
+    "phase": "U0",
+    "split_version": "protocol_a_rollv2_cv3",
+    "locked_test_accessed": false,
+    "fold_audit": [
+      {
+        "fold": 1,
+        "train_count": 1786,
+        "dev_count": 349,
+        "train_dev_overlap": 0,
+        "locked_overlap": 0
+      },
+      {
+        "fold": 2,
+        "train_count": 2135,
+        "dev_count": 356,
+        "train_dev_overlap": 0,
+        "locked_overlap": 0
+      },
+      {
+        "fold": 3,
+        "train_count": 2491,
+        "dev_count": 357,
+        "train_dev_overlap": 0,
+        "locked_overlap": 0
+      }
+    ],
+    "stage_t_final_action": "keep_H2_history_behavior",
+    "stage_t_locked_test_accessed": false,
+    "stage_g_recovery_mean_gauc_by_mode": {
+      "causal_shuffle": 0.6111575584931447,
+      "no_eeg": 0.6025329576586558,
+      "real": 0.6106098789169059,
+      "zero": 0.6025329576586558
+    },
+    "stage_g_recovery_temporal_eeg_gain_proven": false,
+    "reference_backbone": "H2-history-behavior",
+    "mandatory_controls": [
+      "H2_E0",
+      "causal_shuffle",
+      "zero"
+    ],
+    "u0_passed": true
+  }
+}
