@@ -6,7 +6,8 @@ EEG pathways:
 
 * profile: rolling mean/std brain-state summaries,
 * dynamic: last/delta/EMA/trend summaries,
-* candidate interaction: bilinear, FiLM, gated, or source-attention residuals.
+* candidate interaction: bilinear, FiLM, gated, source-attention, or
+  gated source-attention residuals.
 
 No current-candidate EEG is ever consumed; all EEG tensors are built by
 ``build_stage_g_arrays`` from preceding events only.
@@ -33,7 +34,7 @@ from models.general.eeg_state_encoder_v2 import EEG_SIZE, make_eeg_encoder
 from utils.like_metrics import evaluate_like_predictions
 
 
-U_INTERACTIONS = {"bilinear", "film", "gated", "cross_attention"}
+U_INTERACTIONS = {"bilinear", "film", "gated", "cross_attention", "gated_cross_attention"}
 U_ADVANCED_ENCODERS = {"none", "pca16", "small_transformer", "fixed_gcn"}
 CONTROL_NAMES = ("H2_E0", "causal_shuffle", "zero")
 
@@ -252,6 +253,11 @@ class StageUModel(nn.Module):
             nn.Linear(3 * h, h, bias=False), nn.ReLU(), nn.Dropout(config.dropout),
             nn.Linear(h, 1, bias=False),
         )
+        self.attention_gate = nn.Linear(4 * h, 1, bias=False)
+        self.attention_gated_head = nn.Sequential(
+            nn.Linear(4 * h, h, bias=False), nn.ReLU(), nn.Dropout(config.dropout),
+            nn.Linear(h, 1, bias=False),
+        )
         self.cross_attention = nn.MultiheadAttention(
             h, num_heads=4, dropout=config.dropout, batch_first=True,
         )
@@ -263,7 +269,8 @@ class StageUModel(nn.Module):
     def eeg_parameters(self):
         modules = [
             self.eeg_encoder, self.eeg_rank, self.candidate_rank, self.film,
-            self.film_head, self.gate, self.gated_head, self.cross_attention,
+            self.film_head, self.gate, self.gated_head, self.attention_gate,
+            self.attention_gated_head, self.cross_attention,
         ]
         for module in modules:
             yield from module.parameters()
@@ -288,6 +295,14 @@ class StageUModel(nn.Module):
             attended = attended.squeeze(1)
             correction = (self.eeg_rank(attended) * self.candidate_rank(candidate_state)).sum(dim=-1)
             return correction / math.sqrt(self.config.rank)
+        if interaction == "gated_cross_attention":
+            attended, _ = self.cross_attention(candidate_state.unsqueeze(1), sources, sources)
+            attended = attended.squeeze(1)
+            features = torch.cat([eeg_state, attended, candidate_state, attended * candidate_state], dim=-1)
+            return (
+                torch.sigmoid(self.attention_gate(features)).squeeze(-1)
+                * self.attention_gated_head(features).squeeze(-1)
+            )
         raise AssertionError(f"unhandled interaction: {interaction}")
 
     def forward(self, base_batch: tuple[torch.Tensor, ...], history_eeg: torch.Tensor,
@@ -555,10 +570,17 @@ def stage_u_development_configs(suite: str) -> list[StageUConfig]:
             StageUConfig("U3-small-transformer-film", False, False, "film", "small_transformer"),
             StageUConfig("U3-fixed-gcn-film", False, False, "film", "fixed_gcn"),
         ]
+    if suite == "v1":
+        return [
+            StageUConfig("V1-profile-gated_cross_attention", True, False, "gated_cross_attention"),
+            StageUConfig("V1-profile-dynamic-gated", True, True, "gated"),
+            StageUConfig("V1-profile-dynamic-gated_cross_attention", True, True, "gated_cross_attention"),
+            StageUConfig("V1-profile-cross_attention-lowdrop", True, False, "cross_attention", dropout=0.05),
+        ]
     if suite == "all":
         return (
             stage_u_development_configs("u1")
             + stage_u_development_configs("u2")
             + stage_u_development_configs("u3")
         )
-    raise ValueError("suite must be one of u1, u2, u3, all")
+    raise ValueError("suite must be one of u1, u2, u3, v1, all")

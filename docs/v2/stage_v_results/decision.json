@@ -1,0 +1,348 @@
+{
+  "phase": "V",
+  "split_version": "protocol_a_rollv2_cv3",
+  "locked_test_accessed": false,
+  "gate_v_definition": "AUC-only real EEG candidate must beat the frozen Stage-U incumbent GAUC, retain non-zero EEG sensitivity, and keep mandatory controls; calibration metrics are logged only",
+  "U0": {
+    "phase": "U0",
+    "split_version": "protocol_a_rollv2_cv3",
+    "locked_test_accessed": false,
+    "fold_audit": [
+      {
+        "fold": 1,
+        "train_count": 1786,
+        "dev_count": 349,
+        "train_dev_overlap": 0,
+        "locked_overlap": 0
+      },
+      {
+        "fold": 2,
+        "train_count": 2135,
+        "dev_count": 356,
+        "train_dev_overlap": 0,
+        "locked_overlap": 0
+      },
+      {
+        "fold": 3,
+        "train_count": 2491,
+        "dev_count": 357,
+        "train_dev_overlap": 0,
+        "locked_overlap": 0
+      }
+    ],
+    "stage_t_final_action": "keep_H2_history_behavior",
+    "stage_t_locked_test_accessed": false,
+    "stage_g_recovery_mean_gauc_by_mode": {
+      "causal_shuffle": 0.6111575584931447,
+      "no_eeg": 0.6025329576586558,
+      "real": 0.6106098789169059,
+      "zero": 0.6025329576586558
+    },
+    "stage_g_recovery_temporal_eeg_gain_proven": false,
+    "reference_backbone": "H2-history-behavior",
+    "mandatory_controls": [
+      "H2_E0",
+      "causal_shuffle",
+      "zero"
+    ],
+    "u0_passed": true
+  },
+  "assessments": [
+    {
+      "config": "V1-profile-cross_attention-lowdrop",
+      "mean_metrics": {
+        "dev_gauc": 0.6037637461068357,
+        "dev_macro_auc": 0.6077780276259113,
+        "dev_auc": 0.6173651407344154,
+        "h2_gauc": 0.5933470814242763,
+        "delta_h2_gauc": 0.010416664682559282,
+        "dev_logloss": 0.6395760664699939,
+        "dev_brier": 0.21825744989746093,
+        "dev_ece": 0.0658028171278407,
+        "h2_logloss": 0.648197935418174,
+        "h2_brier": 0.22232621328942326,
+        "h2_ece": 0.05770846729616002,
+        "correction_abs_mean": 0.1455272798322969,
+        "eeg_gradient_norm": 0.1855465355477456,
+        "zero_sensitivity": 0.03152234723610389,
+        "shuffle_sensitivity": 0.009381639528631544
+      },
+      "fold_delta_h2_gauc": {
+        "1": 0.007719375704450397,
+        "2": 0.0022116627585376802,
+        "3": 0.02131895558468977
+      },
+      "folds_with_positive_h2_gain": 3,
+      "seed_wins_vs_h2": 8,
+      "run_count": 9,
+      "minimum_mean_gauc_gain": 0.005,
+      "calibration_relative_ratios": {
+        "logloss": 0.9866987096424213,
+        "brier": 0.9816991288082363,
+        "ece": 1.140262776173563
+      },
+      "calibration_relative_tolerance": 0.05,
+      "calibration_ok": false,
+      "sensitivity_ok": true,
+      "paired_bootstrap": {
+        "requested_replicates": 0,
+        "skipped": true
+      },
+      "temporal_independent_gain_proven": false,
+      "auc_only_selection": true,
+      "passed_gate_u_screen": true,
+      "incumbent_stage_u_config": "U2-profile-gated",
+      "incumbent_stage_u_gauc": 0.6115735683810356,
+      "delta_incumbent_stage_u_gauc": -0.007809822274199907,
+      "beats_incumbent_stage_u_gauc": false
+    },
+    {
+      "config": "V1-profile-dynamic-gated",
+      "mean_metrics": {
+        "dev_gauc": 0.6156558638159757,
+        "dev_macro_auc": 0.619764450778009,
+        "dev_auc": 0.6463401614967279,
+        "h2_gauc": 0.5982315427169337,
+        "delta_h2_gauc": 0.01742432109904193,
+        "dev_logloss": 0.6257668489178335,
+        "dev_brier": 0.21252621576872802,
+        "dev_ece": 0.06258334293728368,
+        "h2_logloss": 0.6463073041093907,
+        "h2_brier": 0.22156606906228063,
+        "h2_ece": 0.056288390911510576,
+        "correction_abs_mean": 0.2631549842448698,
+        "eeg_gradient_norm": 0.18594098707849527,
+        "zero_sensitivity": 0.056392068767713174,
+        "shuffle_sensitivity": 0.029233814459682133
+      },
+      "fold_delta_h2_gauc": {
+        "1": 0.004974119302477524,
+        "2": 0.019945887445887506,
+        "3": 0.02735295654876076
+      },
+      "folds_with_positive_h2_gain": 3,
+      "seed_wins_vs_h2": 9,
+      "run_count": 9,
+      "minimum_mean_gauc_gain": 0.005,
+      "calibration_relative_ratios": {
+        "logloss": 0.9682187481698634,
+        "brier": 0.9592001910228791,
+        "ece": 1.1118339310084246
+      },
+      "calibration_relative_tolerance": 0.05,
+      "calibration_ok": false,
+      "sensitivity_ok": true,
+      "paired_bootstrap": {
+        "requested_replicates": 0,
+        "skipped": true
+      },
+      "temporal_independent_gain_proven": false,
+      "auc_only_selection": true,
+      "passed_gate_u_screen": true,
+      "incumbent_stage_u_config": "U2-profile-gated",
+      "incumbent_stage_u_gauc": 0.6115735683810356,
+      "delta_incumbent_stage_u_gauc": 0.0040822954349400975,
+      "beats_incumbent_stage_u_gauc": true
+    },
+    {
+      "config": "V1-profile-dynamic-gated_cross_attention",
+      "mean_metrics": {
+        "dev_gauc": 0.6160204758227728,
+        "dev_macro_auc": 0.6193525280446578,
+        "dev_auc": 0.654840267665957,
+        "h2_gauc": 0.6013810453915083,
+        "delta_h2_gauc": 0.01463943043126449,
+        "dev_logloss": 0.6315088646278642,
+        "dev_brier": 0.21451430992584966,
+        "dev_ece": 0.07737730845603721,
+        "h2_logloss": 0.6406540826243142,
+        "h2_brier": 0.2193865626520555,
+        "h2_ece": 0.05934062984411373,
+        "correction_abs_mean": 0.32120252545509076,
+        "eeg_gradient_norm": 0.17608716985987818,
+        "zero_sensitivity": 0.06611363577071137,
+        "shuffle_sensitivity": 0.04042581422158441
+      },
+      "fold_delta_h2_gauc": {
+        "1": 0.002056959071884412,
+        "2": 0.014917478354978328,
+        "3": 0.02694385386693073
+      },
+      "folds_with_positive_h2_gain": 3,
+      "seed_wins_vs_h2": 8,
+      "run_count": 9,
+      "minimum_mean_gauc_gain": 0.005,
+      "calibration_relative_ratios": {
+        "logloss": 0.9857251857991938,
+        "brier": 0.9777914715135348,
+        "ece": 1.3039515869532454
+      },
+      "calibration_relative_tolerance": 0.05,
+      "calibration_ok": false,
+      "sensitivity_ok": true,
+      "paired_bootstrap": {
+        "requested_replicates": 0,
+        "skipped": true
+      },
+      "temporal_independent_gain_proven": false,
+      "auc_only_selection": true,
+      "passed_gate_u_screen": true,
+      "incumbent_stage_u_config": "U2-profile-gated",
+      "incumbent_stage_u_gauc": 0.6115735683810356,
+      "delta_incumbent_stage_u_gauc": 0.004446907441737147,
+      "beats_incumbent_stage_u_gauc": true
+    },
+    {
+      "config": "V1-profile-gated_cross_attention",
+      "mean_metrics": {
+        "dev_gauc": 0.6068664692161392,
+        "dev_macro_auc": 0.6085761868814118,
+        "dev_auc": 0.6461177550800268,
+        "h2_gauc": 0.5978566249764617,
+        "delta_h2_gauc": 0.009009844239677347,
+        "dev_logloss": 0.6248470768875172,
+        "dev_brier": 0.2118470985678782,
+        "dev_ece": 0.05357735866820987,
+        "h2_logloss": 0.6459363466319377,
+        "h2_brier": 0.2213693312303592,
+        "h2_ece": 0.056500072170239,
+        "correction_abs_mean": 0.27091946722228183,
+        "eeg_gradient_norm": 0.1349404600293736,
+        "zero_sensitivity": 0.055764384805418864,
+        "shuffle_sensitivity": 0.020889026945143187
+      },
+      "fold_delta_h2_gauc": {
+        "1": 0.005910634418097101,
+        "2": 0.010300850769600745,
+        "3": 0.010818047531334196
+      },
+      "folds_with_positive_h2_gain": 3,
+      "seed_wins_vs_h2": 9,
+      "run_count": 9,
+      "minimum_mean_gauc_gain": 0.005,
+      "calibration_relative_ratios": {
+        "logloss": 0.9673508545317432,
+        "brier": 0.9569848605063902,
+        "ece": 0.9482706235626961
+      },
+      "calibration_relative_tolerance": 0.05,
+      "calibration_ok": true,
+      "sensitivity_ok": true,
+      "paired_bootstrap": {
+        "requested_replicates": 0,
+        "skipped": true
+      },
+      "temporal_independent_gain_proven": false,
+      "auc_only_selection": true,
+      "passed_gate_u_screen": true,
+      "incumbent_stage_u_config": "U2-profile-gated",
+      "incumbent_stage_u_gauc": 0.6115735683810356,
+      "delta_incumbent_stage_u_gauc": -0.004707099164896422,
+      "beats_incumbent_stage_u_gauc": false
+    }
+  ],
+  "incumbent_stage_u_candidate": {
+    "config": "U2-profile-gated",
+    "dev_gauc": 0.6115735683810356,
+    "source": "docs\\v2\\stage_u_results\\decision.json"
+  },
+  "best_raw_gauc_candidate": {
+    "config": "V1-profile-dynamic-gated_cross_attention",
+    "mean_metrics": {
+      "dev_gauc": 0.6160204758227728,
+      "dev_macro_auc": 0.6193525280446578,
+      "dev_auc": 0.654840267665957,
+      "h2_gauc": 0.6013810453915083,
+      "delta_h2_gauc": 0.01463943043126449,
+      "dev_logloss": 0.6315088646278642,
+      "dev_brier": 0.21451430992584966,
+      "dev_ece": 0.07737730845603721,
+      "h2_logloss": 0.6406540826243142,
+      "h2_brier": 0.2193865626520555,
+      "h2_ece": 0.05934062984411373,
+      "correction_abs_mean": 0.32120252545509076,
+      "eeg_gradient_norm": 0.17608716985987818,
+      "zero_sensitivity": 0.06611363577071137,
+      "shuffle_sensitivity": 0.04042581422158441
+    },
+    "fold_delta_h2_gauc": {
+      "1": 0.002056959071884412,
+      "2": 0.014917478354978328,
+      "3": 0.02694385386693073
+    },
+    "folds_with_positive_h2_gain": 3,
+    "seed_wins_vs_h2": 8,
+    "run_count": 9,
+    "minimum_mean_gauc_gain": 0.005,
+    "calibration_relative_ratios": {
+      "logloss": 0.9857251857991938,
+      "brier": 0.9777914715135348,
+      "ece": 1.3039515869532454
+    },
+    "calibration_relative_tolerance": 0.05,
+    "calibration_ok": false,
+    "sensitivity_ok": true,
+    "paired_bootstrap": {
+      "requested_replicates": 0,
+      "skipped": true
+    },
+    "temporal_independent_gain_proven": false,
+    "auc_only_selection": true,
+    "passed_gate_u_screen": true,
+    "incumbent_stage_u_config": "U2-profile-gated",
+    "incumbent_stage_u_gauc": 0.6115735683810356,
+    "delta_incumbent_stage_u_gauc": 0.004446907441737147,
+    "beats_incumbent_stage_u_gauc": true
+  },
+  "best_candidate": {
+    "config": "V1-profile-dynamic-gated_cross_attention",
+    "mean_metrics": {
+      "dev_gauc": 0.6160204758227728,
+      "dev_macro_auc": 0.6193525280446578,
+      "dev_auc": 0.654840267665957,
+      "h2_gauc": 0.6013810453915083,
+      "delta_h2_gauc": 0.01463943043126449,
+      "dev_logloss": 0.6315088646278642,
+      "dev_brier": 0.21451430992584966,
+      "dev_ece": 0.07737730845603721,
+      "h2_logloss": 0.6406540826243142,
+      "h2_brier": 0.2193865626520555,
+      "h2_ece": 0.05934062984411373,
+      "correction_abs_mean": 0.32120252545509076,
+      "eeg_gradient_norm": 0.17608716985987818,
+      "zero_sensitivity": 0.06611363577071137,
+      "shuffle_sensitivity": 0.04042581422158441
+    },
+    "fold_delta_h2_gauc": {
+      "1": 0.002056959071884412,
+      "2": 0.014917478354978328,
+      "3": 0.02694385386693073
+    },
+    "folds_with_positive_h2_gain": 3,
+    "seed_wins_vs_h2": 8,
+    "run_count": 9,
+    "minimum_mean_gauc_gain": 0.005,
+    "calibration_relative_ratios": {
+      "logloss": 0.9857251857991938,
+      "brier": 0.9777914715135348,
+      "ece": 1.3039515869532454
+    },
+    "calibration_relative_tolerance": 0.05,
+    "calibration_ok": false,
+    "sensitivity_ok": true,
+    "paired_bootstrap": {
+      "requested_replicates": 0,
+      "skipped": true
+    },
+    "temporal_independent_gain_proven": false,
+    "auc_only_selection": true,
+    "passed_gate_u_screen": true,
+    "incumbent_stage_u_config": "U2-profile-gated",
+    "incumbent_stage_u_gauc": 0.6115735683810356,
+    "delta_incumbent_stage_u_gauc": 0.004446907441737147,
+    "beats_incumbent_stage_u_gauc": true
+  },
+  "gate_v_passed": true,
+  "final_action": "freeze_stage_v_candidate::V1-profile-dynamic-gated_cross_attention",
+  "interpretation_rule": "If best_candidate.temporal_independent_gain_proven is false, report it only as EEG distribution/state performance gain, not proven temporal cognitive gain."
+}

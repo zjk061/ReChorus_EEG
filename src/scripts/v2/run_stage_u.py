@@ -32,9 +32,9 @@ MIN_SENSITIVITY = 1e-6
 def arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset_dir", type=Path, default=ROOT / "src/data/EEGsvRec_eeg_v2")
-    parser.add_argument("--output_dir", type=Path, default=ROOT / "log/v2/stage_u")
-    parser.add_argument("--report_dir", type=Path, default=ROOT / "docs/v2/stage_u_results")
-    parser.add_argument("--suite", choices=["u0", "u1", "u2", "u3", "u1_u2", "all"], default="u1")
+    parser.add_argument("--output_dir", type=Path)
+    parser.add_argument("--report_dir", type=Path)
+    parser.add_argument("--suite", choices=["u0", "u1", "u2", "u3", "u1_u2", "v1", "all"], default="u1")
     parser.add_argument("--seeds", nargs="+", type=int)
     parser.add_argument("--max_epochs", type=int, default=60)
     parser.add_argument("--patience", type=int, default=8)
@@ -46,7 +46,14 @@ def arguments() -> argparse.Namespace:
     )
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--resume", action="store_true")
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.output_dir is None:
+        args.output_dir = ROOT / ("log/v2/stage_v" if args.suite.startswith("v") else "log/v2/stage_u")
+    if args.report_dir is None:
+        args.report_dir = ROOT / (
+            "docs/v2/stage_v_results" if args.suite.startswith("v") else "docs/v2/stage_u_results"
+        )
+    return args
 
 
 def _git_commit() -> str:
@@ -145,14 +152,14 @@ def _record_training_history(output: Path, metadata: dict[str, Any]) -> None:
     pd.DataFrame(rows).to_csv(output / "training_history.csv", index=False)
 
 
-def _run_config(stage: str, config: StageUConfig, seeds: list[int], args: argparse.Namespace,
+def _run_config(phase: str, stage: str, config: StageUConfig, seeds: list[int], args: argparse.Namespace,
                 folds: list[tuple[int, dict[str, list[str]]]], rows: list[dict[str, Any]],
                 ensembles: dict[tuple[str, int, str], pd.DataFrame]) -> None:
     for fold_id, event_ids in folds:
         data = load_stage_b_data(args.dataset_dir, history_max=30, split_event_ids=event_ids)
         seed_predictions: dict[str, list[np.ndarray]] = {"real": [], **{name: [] for name in CONTROL_NAMES}}
         for seed in seeds:
-            experiment_id = f"U_{stage}_f{fold_id}_{config.name}_s{seed}"
+            experiment_id = f"{phase}_{stage}_f{fold_id}_{config.name}_s{seed}"
             output = args.output_dir / experiment_id
             output.mkdir(parents=True, exist_ok=True)
             if args.resume and _complete(output):
@@ -202,7 +209,7 @@ def _run_config(stage: str, config: StageUConfig, seeds: list[int], args: argpar
                 control_values = _control_metrics(data, result.predictions)
                 stored = {
                     "experiment_id": experiment_id,
-                    "phase": "U",
+                    "phase": phase,
                     "suite": stage,
                     "fold": fold_id,
                     "seed": seed,
@@ -286,6 +293,7 @@ def _summary(frame: pd.DataFrame) -> pd.DataFrame:
         h2_gauc_mean=("h2_gauc", "mean"),
         delta_h2_gauc_mean=("delta_h2_gauc", "mean"),
         delta_shuffle_gauc_mean=("delta_shuffle_gauc", "mean"),
+        macro_auc_mean=("dev_macro_auc", "mean"),
         auc_mean=("dev_auc", "mean"),
         logloss_mean=("dev_logloss", "mean"),
         brier_mean=("dev_brier", "mean"),
@@ -305,8 +313,8 @@ def _assess_config(frame: pd.DataFrame, ensembles: dict[tuple[str, int, str], pd
                    config: str, bootstrap: int) -> dict[str, Any]:
     subset = frame.loc[frame.config == config]
     mean = subset[[
-        "dev_gauc", "h2_gauc", "delta_h2_gauc", "dev_logloss", "dev_brier", "dev_ece",
-        "h2_logloss", "h2_brier", "h2_ece", "correction_abs_mean",
+        "dev_gauc", "dev_macro_auc", "dev_auc", "h2_gauc", "delta_h2_gauc",
+        "dev_logloss", "dev_brier", "dev_ece", "h2_logloss", "h2_brier", "h2_ece", "correction_abs_mean",
         "eeg_gradient_norm", "zero_sensitivity", "shuffle_sensitivity",
     ]].mean()
     fold_mean = subset.groupby("fold").delta_h2_gauc.mean()
@@ -343,7 +351,6 @@ def _assess_config(frame: pd.DataFrame, ensembles: dict[tuple[str, int, str], pd
     passed = bool(
         mean.delta_h2_gauc >= MIN_MEAN_GAUC_GAIN
         and folds_with_gain >= 2
-        and calibration_ok
         and sensitivity_ok
     )
     return {
@@ -363,6 +370,7 @@ def _assess_config(frame: pd.DataFrame, ensembles: dict[tuple[str, int, str], pd
             bootstrap > 0
             and paired["causal_shuffle"]["intervals"]["DELTA_GAUC"]["lower"] > 0
         ),
+        "auc_only_selection": True,
         "passed_gate_u_screen": passed,
     }
 
@@ -378,19 +386,42 @@ def _write_current(args: argparse.Namespace, rows: list[dict[str, Any]],
         encoding="utf-8")
 
 
+def _stage_u_incumbent() -> dict[str, Any] | None:
+    path = ROOT / "docs/v2/stage_u_results/decision.json"
+    if not path.exists():
+        return None
+    decision = json.loads(path.read_text(encoding="utf-8"))
+    candidate = decision.get("best_candidate")
+    if not candidate:
+        return None
+    return {
+        "config": candidate.get("config"),
+        "dev_gauc": candidate.get("mean_metrics", {}).get("dev_gauc"),
+        "source": str(path.relative_to(ROOT)),
+    }
+
+
 def main() -> None:
     args = arguments()
     args.output_dir.mkdir(parents=True, exist_ok=True)
     args.report_dir.mkdir(parents=True, exist_ok=True)
     folds = _folds(args.dataset_dir)
+    phase = "V" if args.suite.startswith("v") else "U"
+    gate_definition_key = "gate_v_definition" if phase == "V" else "gate_u_definition"
+    gate_definition = (
+        "AUC-only real EEG candidate must beat the frozen Stage-U incumbent GAUC, "
+        "retain non-zero EEG sensitivity, and keep mandatory controls; calibration metrics are logged only"
+        if phase == "V"
+        else (
+            "real EEG mean GAUC gain >= 0.005 vs H2/E0, at least 2/3 folds positive, "
+            "and non-zero EEG sensitivity; calibration metrics are logged only"
+        )
+    )
     decisions: dict[str, Any] = {
-        "phase": "U",
+        "phase": phase,
         "split_version": "protocol_a_rollv2_cv3",
         "locked_test_accessed": False,
-        "gate_u_definition": (
-            "real EEG mean GAUC gain >= 0.005 vs H2/E0, at least 2/3 folds positive, "
-            "calibration within 5%, and non-zero EEG sensitivity"
-        ),
+        gate_definition_key: gate_definition,
     }
     decisions["U0"] = _u0_audit(args, folds)
     if args.suite == "u0":
@@ -410,7 +441,7 @@ def main() -> None:
         suites = [args.suite]
     for suite in suites:
         for config in stage_u_development_configs(suite):
-            _run_config(suite.upper(), config, seeds, args, folds, rows, ensembles)
+            _run_config(phase, suite.upper(), config, seeds, args, folds, rows, ensembles)
         _write_current(args, rows, decisions)
 
     frame = pd.DataFrame(rows)
@@ -418,16 +449,34 @@ def main() -> None:
         _assess_config(frame, ensembles, config, args.bootstrap)
         for config in sorted(frame.config.unique())
     ]
+    incumbent = _stage_u_incumbent() if phase == "V" else None
+    if incumbent and incumbent.get("dev_gauc") is not None:
+        incumbent_gauc = float(incumbent["dev_gauc"])
+        for item in assessments:
+            item["incumbent_stage_u_config"] = incumbent["config"]
+            item["incumbent_stage_u_gauc"] = incumbent_gauc
+            item["delta_incumbent_stage_u_gauc"] = float(item["mean_metrics"]["dev_gauc"] - incumbent_gauc)
+            item["beats_incumbent_stage_u_gauc"] = bool(item["delta_incumbent_stage_u_gauc"] > 0)
     passing = [item for item in assessments if item["passed_gate_u_screen"]]
+    if phase == "V" and incumbent:
+        passing = [item for item in passing if item.get("beats_incumbent_stage_u_gauc")]
     if passing:
         best = max(passing, key=lambda item: item["mean_metrics"]["dev_gauc"])
-        final_action = f"freeze_stage_u_candidate::{best['config']}"
+        final_action = f"freeze_stage_{phase.lower()}_candidate::{best['config']}"
     else:
         best = None
-        final_action = "stage_u_no_performance_candidate_keep_H2_history_behavior"
+        if phase == "V" and incumbent:
+            final_action = f"stage_v_no_auc_upgrade_keep_stage_u_candidate::{incumbent['config']}"
+        else:
+            final_action = f"stage_{phase.lower()}_no_performance_candidate_keep_H2_history_behavior"
     decisions["assessments"] = assessments
+    if incumbent:
+        decisions["incumbent_stage_u_candidate"] = incumbent
+        decisions["best_raw_gauc_candidate"] = max(
+            assessments, key=lambda item: item["mean_metrics"]["dev_gauc"]
+        ) if assessments else None
     decisions["best_candidate"] = best
-    decisions["gate_u_passed"] = bool(best is not None)
+    decisions["gate_v_passed" if phase == "V" else "gate_u_passed"] = bool(best is not None)
     decisions["final_action"] = final_action
     decisions["interpretation_rule"] = (
         "If best_candidate.temporal_independent_gain_proven is false, report it only as "

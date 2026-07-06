@@ -87,6 +87,44 @@ class StageUEEGPerformanceTests(unittest.TestCase):
             self.assertTrue(config.use_profile)
             self.assertFalse(config.use_dynamic)
 
+    def test_v1_continuation_suite_targets_gated_attention_push(self):
+        configs = stage_u_development_configs("v1")
+        self.assertEqual(
+            [config.name for config in configs],
+            [
+                "V1-profile-gated_cross_attention",
+                "V1-profile-dynamic-gated",
+                "V1-profile-dynamic-gated_cross_attention",
+                "V1-profile-cross_attention-lowdrop",
+            ],
+        )
+        for config in configs:
+            config.validate()
+            self.assertTrue(config.use_profile)
+        self.assertIn("gated_cross_attention", {config.interaction for config in configs})
+
+    def test_stage_v1_gated_attention_smoke_outputs_controls(self):
+        result = fit_stage_u(
+            self.data,
+            self.dataset_dir,
+            seed=29,
+            config=StageUConfig(
+                "V1-profile-dynamic-gated_cross_attention",
+                use_profile=True,
+                use_dynamic=True,
+                interaction="gated_cross_attention",
+            ),
+            max_epochs=1,
+            patience=1,
+            recovery_epochs=1,
+            recovery_patience=1,
+        )
+        self.assertEqual(set(result.predictions), {"real", *CONTROL_NAMES})
+        self.assertTrue(all(np.isfinite(value).all() for value in result.predictions.values()))
+        self.assertEqual(result.metadata["interaction"], "gated_cross_attention")
+        self.assertTrue(result.metadata["uses_profile"])
+        self.assertTrue(result.metadata["uses_dynamic"])
+
 
 if __name__ == "__main__":
     unittest.main()
