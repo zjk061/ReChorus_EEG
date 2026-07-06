@@ -1,0 +1,371 @@
+{
+  "split_version": "protocol_a_rollv2_cv3",
+  "locked_test_accessed": false,
+  "calibration_regression_definition": "no mean LogLoss/Brier/ECE increase above 5%",
+  "maximum_total_runs": 111,
+  "T2_scheduler": {
+    "assessment": {
+      "reference": "sch-none_bal-sample_bce_pair-0p0",
+      "candidate": "sch-plateau_bal-sample_bce_pair-0p0",
+      "mean_metrics": {
+        "sch-none_bal-sample_bce_pair-0p0": {
+          "gauc": 0.6121378558913785,
+          "logloss": 0.6355426967777552,
+          "brier": 0.21640892399334452,
+          "ece": 0.06562314607997523,
+          "auc": 0.6250798107500022
+        },
+        "sch-plateau_bal-sample_bce_pair-0p0": {
+          "gauc": 0.6044000557998369,
+          "logloss": 0.6394086508516108,
+          "brier": 0.21827236268132597,
+          "ece": 0.06687405793866595,
+          "auc": 0.6166934843374388
+        }
+      },
+      "seeds_not_below_reference_by_fold": {
+        "1": 1,
+        "2": 3,
+        "3": 1
+      },
+      "required_seed_wins": 2,
+      "paired_bootstrap": {
+        "difference_definition": "candidate minus reference",
+        "sampling_unit": "paired user cluster",
+        "seed": 2026,
+        "requested_replicates": 1000,
+        "effective_replicates": 1000,
+        "failed_replicates": 0,
+        "confidence": 0.95,
+        "intervals": {
+          "DELTA_GAUC": {
+            "lower": -0.039327863374874455,
+            "upper": -0.003352041924566334
+          },
+          "DELTA_AUC": {
+            "lower": -0.03234537050191499,
+            "upper": -0.003314143840723164
+          },
+          "DELTA_LOG_LOSS": {
+            "lower": 0.001655843214327809,
+            "upper": 0.013842246039737337
+          }
+        }
+      },
+      "calibration_relative_ratios": {
+        "logloss": 1.0060829179431314,
+        "brier": 1.008610729417234,
+        "ece": 1.0190620525441776
+      },
+      "calibration_relative_tolerance": 0.05,
+      "calibration_ok": true,
+      "passed": false
+    },
+    "selected": "sch-none_bal-sample_bce_pair-0p0"
+  },
+  "T3_user_balance": {
+    "assessments": [
+      {
+        "reference": "sch-none_bal-sample_bce_pair-0p0",
+        "candidate": "sch-none_bal-inverse_user_count_bce_pair-0p0",
+        "mean_metrics": {
+          "sch-none_bal-inverse_user_count_bce_pair-0p0": {
+            "gauc": 0.6120040767060666,
+            "logloss": 0.6361790619538225,
+            "brier": 0.21617729717634726,
+            "ece": 0.06324164581466685,
+            "auc": 0.6291950259794593
+          },
+          "sch-none_bal-sample_bce_pair-0p0": {
+            "gauc": 0.6121378558913785,
+            "logloss": 0.6355426967777552,
+            "brier": 0.21640892399334452,
+            "ece": 0.06562314607997523,
+            "auc": 0.6250798107500022
+          }
+        },
+        "seeds_not_below_reference_by_fold": {
+          "1": 1,
+          "2": 1,
+          "3": 2
+        },
+        "required_seed_wins": 2,
+        "paired_bootstrap": {
+          "difference_definition": "candidate minus reference",
+          "sampling_unit": "paired user cluster",
+          "seed": 2026,
+          "requested_replicates": 1000,
+          "effective_replicates": 1000,
+          "failed_replicates": 0,
+          "confidence": 0.95,
+          "intervals": {
+            "DELTA_GAUC": {
+              "lower": -0.0435068467569743,
+              "upper": 0.006503477488571497
+            },
+            "DELTA_AUC": {
+              "lower": -0.006898550123811318,
+              "upper": 0.011756606458561683
+            },
+            "DELTA_LOG_LOSS": {
+              "lower": -0.004012940057184718,
+              "upper": 0.0026138002038932407
+            }
+          }
+        },
+        "calibration_relative_ratios": {
+          "logloss": 1.0010012941369535,
+          "brier": 0.9989296799192792,
+          "ece": 0.9637094469319402
+        },
+        "calibration_relative_tolerance": 0.05,
+        "calibration_ok": true,
+        "passed": false
+      },
+      {
+        "reference": "sch-none_bal-sample_bce_pair-0p0",
+        "candidate": "sch-none_bal-user_balanced_sampler_pair-0p0",
+        "mean_metrics": {
+          "sch-none_bal-sample_bce_pair-0p0": {
+            "gauc": 0.6121378558913785,
+            "logloss": 0.6355426967777552,
+            "brier": 0.21640892399334452,
+            "ece": 0.06562314607997523,
+            "auc": 0.6250798107500022
+          },
+          "sch-none_bal-user_balanced_sampler_pair-0p0": {
+            "gauc": 0.6201977116942472,
+            "logloss": 0.6289594716985438,
+            "brier": 0.2142570918461485,
+            "ece": 0.05629199914999791,
+            "auc": 0.6354229485616069
+          }
+        },
+        "seeds_not_below_reference_by_fold": {
+          "1": 1,
+          "2": 3,
+          "3": 3
+        },
+        "required_seed_wins": 2,
+        "paired_bootstrap": {
+          "difference_definition": "candidate minus reference",
+          "sampling_unit": "paired user cluster",
+          "seed": 2026,
+          "requested_replicates": 1000,
+          "effective_replicates": 1000,
+          "failed_replicates": 0,
+          "confidence": 0.95,
+          "intervals": {
+            "DELTA_GAUC": {
+              "lower": -0.008780301444423277,
+              "upper": 0.02909880494150365
+            },
+            "DELTA_AUC": {
+              "lower": -0.004487715432875562,
+              "upper": 0.02841940822994564
+            },
+            "DELTA_LOG_LOSS": {
+              "lower": -0.010445915225444507,
+              "upper": 0.0003896553686488998
+            }
+          }
+        },
+        "calibration_relative_ratios": {
+          "logloss": 0.9896415691461977,
+          "brier": 0.9900566385734527,
+          "ece": 0.8578070774204363
+        },
+        "calibration_relative_tolerance": 0.05,
+        "calibration_ok": true,
+        "passed": false
+      }
+    ],
+    "selected": "sch-none_bal-sample_bce_pair-0p0"
+  },
+  "T4_pairwise": {
+    "assessments": [
+      {
+        "reference": "sch-none_bal-sample_bce_pair-0p0",
+        "candidate": "sch-none_bal-sample_bce_pair-0p05",
+        "mean_metrics": {
+          "sch-none_bal-sample_bce_pair-0p0": {
+            "gauc": 0.6121378558913785,
+            "logloss": 0.6355426967777552,
+            "brier": 0.21640892399334452,
+            "ece": 0.06562314607997523,
+            "auc": 0.6250798107500022
+          },
+          "sch-none_bal-sample_bce_pair-0p05": {
+            "gauc": 0.6093630513941601,
+            "logloss": 0.6381430717418846,
+            "brier": 0.21805635453832892,
+            "ece": 0.06761035969116685,
+            "auc": 0.6200759506214989
+          }
+        },
+        "seeds_not_below_reference_by_fold": {
+          "1": 2,
+          "2": 2,
+          "3": 1
+        },
+        "required_seed_wins": 2,
+        "paired_bootstrap": {
+          "difference_definition": "candidate minus reference",
+          "sampling_unit": "paired user cluster",
+          "seed": 2026,
+          "requested_replicates": 1000,
+          "effective_replicates": 1000,
+          "failed_replicates": 0,
+          "confidence": 0.95,
+          "intervals": {
+            "DELTA_GAUC": {
+              "lower": -0.04694127791037077,
+              "upper": -0.0093283916763374
+            },
+            "DELTA_AUC": {
+              "lower": -0.028705698033338223,
+              "upper": 0.0004636238904091958
+            },
+            "DELTA_LOG_LOSS": {
+              "lower": 0.00018631950065412035,
+              "upper": 0.011649669927940823
+            }
+          }
+        },
+        "calibration_relative_ratios": {
+          "logloss": 1.0040915818517204,
+          "brier": 1.0076125813787378,
+          "ece": 1.0302822057444456
+        },
+        "calibration_relative_tolerance": 0.05,
+        "calibration_ok": true,
+        "passed": false,
+        "non_spike_neighbour_support": true
+      },
+      {
+        "reference": "sch-none_bal-sample_bce_pair-0p0",
+        "candidate": "sch-none_bal-sample_bce_pair-0p1",
+        "mean_metrics": {
+          "sch-none_bal-sample_bce_pair-0p0": {
+            "gauc": 0.6121378558913785,
+            "logloss": 0.6355426967777552,
+            "brier": 0.21640892399334452,
+            "ece": 0.06562314607997523,
+            "auc": 0.6250798107500022
+          },
+          "sch-none_bal-sample_bce_pair-0p1": {
+            "gauc": 0.6129007599546188,
+            "logloss": 0.6386935180836111,
+            "brier": 0.21828390505474635,
+            "ece": 0.07080165152336694,
+            "auc": 0.6192025804369219
+          }
+        },
+        "seeds_not_below_reference_by_fold": {
+          "1": 1,
+          "2": 3,
+          "3": 2
+        },
+        "required_seed_wins": 2,
+        "paired_bootstrap": {
+          "difference_definition": "candidate minus reference",
+          "sampling_unit": "paired user cluster",
+          "seed": 2026,
+          "requested_replicates": 1000,
+          "effective_replicates": 1000,
+          "failed_replicates": 0,
+          "confidence": 0.95,
+          "intervals": {
+            "DELTA_GAUC": {
+              "lower": -0.028450898436984923,
+              "upper": -0.00430036347390257
+            },
+            "DELTA_AUC": {
+              "lower": -0.03519519787545942,
+              "upper": -0.0009381352538061466
+            },
+            "DELTA_LOG_LOSS": {
+              "lower": 0.0009764263266085359,
+              "upper": 0.01158835584544092
+            }
+          }
+        },
+        "calibration_relative_ratios": {
+          "logloss": 1.0049576862763598,
+          "brier": 1.0086640653573948,
+          "ece": 1.0789127884402347
+        },
+        "calibration_relative_tolerance": 0.05,
+        "calibration_ok": false,
+        "passed": false,
+        "non_spike_neighbour_support": false
+      },
+      {
+        "reference": "sch-none_bal-sample_bce_pair-0p0",
+        "candidate": "sch-none_bal-sample_bce_pair-0p2",
+        "mean_metrics": {
+          "sch-none_bal-sample_bce_pair-0p0": {
+            "gauc": 0.6121378558913785,
+            "logloss": 0.6355426967777552,
+            "brier": 0.21640892399334452,
+            "ece": 0.06562314607997523,
+            "auc": 0.6250798107500022
+          },
+          "sch-none_bal-sample_bce_pair-0p2": {
+            "gauc": 0.6117059002642721,
+            "logloss": 0.6392411938713306,
+            "brier": 0.21832449324381975,
+            "ece": 0.07239465837503506,
+            "auc": 0.6201273870557171
+          }
+        },
+        "seeds_not_below_reference_by_fold": {
+          "1": 2,
+          "2": 3,
+          "3": 0
+        },
+        "required_seed_wins": 2,
+        "paired_bootstrap": {
+          "difference_definition": "candidate minus reference",
+          "sampling_unit": "paired user cluster",
+          "seed": 2026,
+          "requested_replicates": 1000,
+          "effective_replicates": 1000,
+          "failed_replicates": 0,
+          "confidence": 0.95,
+          "intervals": {
+            "DELTA_GAUC": {
+              "lower": -0.055591092277244285,
+              "upper": -0.002894350668356536
+            },
+            "DELTA_AUC": {
+              "lower": -0.031099524379235192,
+              "upper": -0.0009303192567018846
+            },
+            "DELTA_LOG_LOSS": {
+              "lower": 0.000775426856738988,
+              "upper": 0.012799814913229504
+            }
+          }
+        },
+        "calibration_relative_ratios": {
+          "logloss": 1.005819431349502,
+          "brier": 1.0088516185706562,
+          "ece": 1.1031878643368813
+        },
+        "calibration_relative_tolerance": 0.05,
+        "calibration_ok": false,
+        "passed": false,
+        "non_spike_neighbour_support": false
+      }
+    ],
+    "selected": "sch-none_bal-sample_bce_pair-0p0"
+  },
+  "T5_confirmation": {
+    "executed": false,
+    "reason": "No T2/T3/T4 candidate passed all screening gates.",
+    "selected": "T0-H2-frozen"
+  },
+  "gate_t_passed": true,
+  "final_action": "keep_H2_history_behavior"
+}
