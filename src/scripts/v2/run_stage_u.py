@@ -34,7 +34,7 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--dataset_dir", type=Path, default=ROOT / "src/data/EEGsvRec_eeg_v2")
     parser.add_argument("--output_dir", type=Path)
     parser.add_argument("--report_dir", type=Path)
-    parser.add_argument("--suite", choices=["u0", "u1", "u2", "u3", "u1_u2", "v1", "v2c", "all"], default="u1")
+    parser.add_argument("--suite", choices=["u0", "u1", "u2", "u3", "u1_u2", "v1", "v2c", "v2e", "all"], default="u1")
     parser.add_argument("--seeds", nargs="+", type=int)
     parser.add_argument("--max_epochs", type=int, default=60)
     parser.add_argument("--patience", type=int, default=8)
@@ -48,12 +48,16 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()
     if args.output_dir is None:
-        if args.suite.startswith("v2"):
+        if args.suite == "v2e":
+            args.output_dir = ROOT / "log/v2/stage_v2e"
+        elif args.suite.startswith("v2"):
             args.output_dir = ROOT / "log/v2/stage_v2c"
         else:
             args.output_dir = ROOT / ("log/v2/stage_v" if args.suite.startswith("v") else "log/v2/stage_u")
     if args.report_dir is None:
-        if args.suite.startswith("v2"):
+        if args.suite == "v2e":
+            args.report_dir = ROOT / "docs/v2/stage_v2e_results"
+        elif args.suite.startswith("v2"):
             args.report_dir = ROOT / "docs/v2/stage_v2c_results"
         else:
             args.report_dir = ROOT / (
@@ -277,6 +281,13 @@ def _run_config(phase: str, stage: str, config: StageUConfig, seeds: list[int], 
                 "h2_sensitivity": sensitivity["h2_mean_abs_prediction_delta"],
                 "correction_abs_mean": metadata["correction_abs_mean"],
                 "eeg_gradient_norm": metadata["eeg_gradient_norm"],
+                "normalization": metadata.get("normalization", config.normalization),
+                "pairwise_weight": config.pairwise_weight,
+                "pair_cap_per_user": config.pair_cap_per_user,
+                "hard_negative_pairs": config.hard_negative_pairs,
+                "listwise_weight": config.listwise_weight,
+                "user_weight_power": config.user_weight_power,
+                "correction_l2": config.correction_l2,
                 "backbone_best_epoch": metadata["backbone_best_epoch"],
                 "eeg_best_epoch": metadata["eeg_best_epoch"],
                 "elapsed_seconds": elapsed,
@@ -311,6 +322,13 @@ def _summary(frame: pd.DataFrame) -> pd.DataFrame:
         eeg_gradient_mean=("eeg_gradient_norm", "mean"),
         zero_sensitivity_mean=("zero_sensitivity", "mean"),
         shuffle_sensitivity_mean=("shuffle_sensitivity", "mean"),
+        normalization=("normalization", "first"),
+        pairwise_weight=("pairwise_weight", "first"),
+        pair_cap_per_user=("pair_cap_per_user", "first"),
+        hard_negative_pairs=("hard_negative_pairs", "first"),
+        listwise_weight=("listwise_weight", "first"),
+        user_weight_power=("user_weight_power", "first"),
+        correction_l2=("correction_l2", "first"),
         elapsed_seconds=("elapsed_seconds", "sum"),
     ).sort_values(["gauc_mean", "delta_h2_gauc_mean"], ascending=False)
 

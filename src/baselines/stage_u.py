@@ -39,6 +39,12 @@ U_INTERACTIONS = {"bilinear", "film", "gated", "cross_attention", "gated_cross_a
 U_ADVANCED_ENCODERS = {"none", "pca16", "small_transformer", "fixed_gcn"}
 CONTROL_NAMES = ("H2_E0", "causal_shuffle", "zero")
 PAIRWISE_WEIGHTS = {0.0, 0.05, 0.1, 0.2}
+LISTWISE_WEIGHTS = {0.0, 0.02, 0.05}
+USER_WEIGHT_POWERS = {0.0, 0.5, 1.0}
+CORRECTION_L2_WEIGHTS = {0.0, 0.001, 0.005, 0.01}
+STAGE_U_NORMALIZATIONS = {
+    "global_train_zscore", "subject_train_zscore", "subject_residual", "session_residual"
+}
 
 
 @dataclass(frozen=True)
@@ -54,6 +60,10 @@ class StageUConfig:
     pairwise_weight: float = 0.0
     pair_cap_per_user: int = 8
     hard_negative_pairs: bool = False
+    listwise_weight: float = 0.0
+    user_weight_power: float = 0.0
+    correction_l2: float = 0.0
+    normalization: str = "global_train_zscore"
 
     def validate(self) -> None:
         if self.interaction not in U_INTERACTIONS:
@@ -72,6 +82,14 @@ class StageUConfig:
             raise ValueError(f"pairwise_weight must be one of {sorted(PAIRWISE_WEIGHTS)}")
         if self.pair_cap_per_user <= 0:
             raise ValueError("pair_cap_per_user must be positive")
+        if self.listwise_weight not in LISTWISE_WEIGHTS:
+            raise ValueError(f"listwise_weight must be one of {sorted(LISTWISE_WEIGHTS)}")
+        if self.user_weight_power not in USER_WEIGHT_POWERS:
+            raise ValueError(f"user_weight_power must be one of {sorted(USER_WEIGHT_POWERS)}")
+        if self.correction_l2 not in CORRECTION_L2_WEIGHTS:
+            raise ValueError(f"correction_l2 must be one of {sorted(CORRECTION_L2_WEIGHTS)}")
+        if self.normalization not in STAGE_U_NORMALIZATIONS:
+            raise ValueError(f"normalization must be one of {sorted(STAGE_U_NORMALIZATIONS)}")
 
 
 @dataclass
@@ -413,29 +431,91 @@ def same_user_pairwise_auc_loss(
     return torch.stack(losses).mean(), len(losses)
 
 
+def same_user_listwise_auc_loss(
+    logits: torch.Tensor,
+    labels: torch.Tensor,
+    users: np.ndarray,
+    cap_per_user: int = 16,
+    hard_negative: bool = False,
+) -> tuple[torch.Tensor, int, int]:
+    """Same-user all-pairs ranking loss within a capped batch slice."""
+    user_values = np.asarray(users)
+    label_values = labels.detach().cpu().numpy()
+    losses: list[torch.Tensor] = []
+    pair_count = 0
+    for user in np.unique(user_values):
+        rows = np.flatnonzero(user_values == user)
+        positive = rows[label_values[rows] > 0.5]
+        negative = rows[label_values[rows] <= 0.5]
+        if len(positive) == 0 or len(negative) == 0:
+            continue
+        if hard_negative:
+            positive_scores = logits[torch.as_tensor(positive, device=logits.device)]
+            negative_scores = logits[torch.as_tensor(negative, device=logits.device)]
+            positive_order = torch.topk(-positive_scores, min(len(positive), cap_per_user)).indices.detach().cpu().numpy()
+            negative_order = torch.topk(negative_scores, min(len(negative), cap_per_user)).indices.detach().cpu().numpy()
+        else:
+            positive_order = np.arange(min(len(positive), cap_per_user))
+            negative_order = np.arange(min(len(negative), cap_per_user))
+        pos = torch.as_tensor(positive[positive_order], device=logits.device)
+        neg = torch.as_tensor(negative[negative_order], device=logits.device)
+        differences = logits[pos].unsqueeze(1) - logits[neg].unsqueeze(0)
+        losses.append(F.softplus(-differences).mean())
+        pair_count += int(len(pos) * len(neg))
+    if not losses:
+        return logits.sum() * 0.0, 0, 0
+    return torch.stack(losses).mean(), len(losses), pair_count
+
+
+def _user_sample_weights(users: np.ndarray, train_index: np.ndarray, power: float) -> np.ndarray:
+    weights = np.ones(len(users), dtype=np.float32)
+    if power <= 0:
+        return weights
+    train_users = np.asarray(users)[train_index]
+    unique, counts = np.unique(train_users, return_counts=True)
+    count_by_user = {user: count for user, count in zip(unique, counts, strict=True)}
+    for row, user in enumerate(users):
+        weights[row] = float(max(1, count_by_user.get(user, 1)) ** (-power))
+    train_mean = float(weights[train_index].mean())
+    if train_mean <= 0 or not math.isfinite(train_mean):
+        raise FloatingPointError("invalid Stage-U user sample weights")
+    return weights / train_mean
+
+
 def _train_phase(model: StageUModel, arrays: StageGArrays,
                  parameters: list[torch.nn.Parameter], seed: int,
                  device: torch.device, use_eeg: bool, max_epochs: int,
                  patience: int, phase: str, batch_size: int = 128) -> tuple[dict[str, torch.Tensor], list[dict[str, Any]], str]:
     optimizer = torch.optim.AdamW(parameters, lr=8e-4, weight_decay=5e-4)
-    criterion = nn.BCEWithLogitsLoss()
+    criterion = nn.BCEWithLogitsLoss(reduction="none")
     generator = torch.Generator().manual_seed(seed)
     pair_generator = torch.Generator().manual_seed(seed + 17001)
     base = arrays.base
+    sample_weights = torch.as_tensor(
+        _user_sample_weights(arrays.users, base.train_index, model.config.user_weight_power),
+        device=device,
+    )
     best_state, best_gauc, stale = None, -math.inf, 0
     history: list[dict[str, Any]] = []
     stop_reason = "max_epochs"
     for epoch in range(1, max_epochs + 1):
         model.train()
-        total_loss, total_pair_loss, batches, paired_users = 0.0, 0.0, 0, 0
+        total_loss, total_pair_loss, total_list_loss, total_correction_l2 = 0.0, 0.0, 0.0, 0.0
+        batches, paired_users, listwise_users, listwise_pairs = 0, 0, 0, 0
         order = torch.randperm(len(base.train_index), generator=generator).numpy()
         for start in range(0, len(order), batch_size):
             index = base.train_index[order[start:start + batch_size]]
             optimizer.zero_grad(set_to_none=True)
             base_batch, eeg, _ = _batch(arrays, index, device)
             target = torch.as_tensor(base.label[index], device=device)
-            logits = model(base_batch, eeg, use_eeg=use_eeg)
-            loss = criterion(logits, target)
+            wants_details = bool(use_eeg and model.config.correction_l2 > 0)
+            if wants_details:
+                logits, details = model(base_batch, eeg, use_eeg=use_eeg, return_details=True)
+            else:
+                logits = model(base_batch, eeg, use_eeg=use_eeg)
+                details = {}
+            bce_loss = criterion(logits, target)
+            loss = (bce_loss * sample_weights[torch.as_tensor(index, device=device)]).mean()
             pair_loss = logits.sum() * 0.0
             pair_user_count = 0
             if model.config.pairwise_weight > 0:
@@ -448,6 +528,22 @@ def _train_phase(model: StageUModel, arrays: StageGArrays,
                     model.config.hard_negative_pairs,
                 )
                 loss = loss + model.config.pairwise_weight * pair_loss
+            list_loss = logits.sum() * 0.0
+            list_user_count = 0
+            list_pair_count = 0
+            if model.config.listwise_weight > 0:
+                list_loss, list_user_count, list_pair_count = same_user_listwise_auc_loss(
+                    logits,
+                    target,
+                    arrays.users[index],
+                    model.config.pair_cap_per_user,
+                    model.config.hard_negative_pairs,
+                )
+                loss = loss + model.config.listwise_weight * list_loss
+            correction_l2_loss = logits.sum() * 0.0
+            if wants_details:
+                correction_l2_loss = details["scaled_correction"].pow(2).mean()
+                loss = loss + model.config.correction_l2 * correction_l2_loss
             if not torch.isfinite(loss):
                 raise FloatingPointError(f"non-finite Stage-U {phase} loss")
             loss.backward()
@@ -455,7 +551,11 @@ def _train_phase(model: StageUModel, arrays: StageGArrays,
             optimizer.step()
             total_loss += float(loss.detach().cpu())
             total_pair_loss += float(pair_loss.detach().cpu())
+            total_list_loss += float(list_loss.detach().cpu())
+            total_correction_l2 += float(correction_l2_loss.detach().cpu())
             paired_users += pair_user_count
+            listwise_users += list_user_count
+            listwise_pairs += list_pair_count
             batches += 1
         prediction, _ = predict_stage_u(model, arrays, base.dev_index, device, use_eeg=use_eeg)
         gauc = evaluate_like_predictions(
@@ -465,7 +565,11 @@ def _train_phase(model: StageUModel, arrays: StageGArrays,
         history.append({
             "epoch": epoch, "train_loss": total_loss / max(1, batches),
             "pairwise_loss": total_pair_loss / max(1, batches),
+            "listwise_loss": total_list_loss / max(1, batches),
+            "correction_l2_loss": total_correction_l2 / max(1, batches),
             "paired_users": paired_users,
+            "listwise_users": listwise_users,
+            "listwise_pairs": listwise_pairs,
             "dev_gauc": float(gauc), "improved": improved,
         })
         if improved:
@@ -507,7 +611,7 @@ def fit_stage_u(data: StageBData, dataset_dir: str | Path, seed: int,
     config.validate()
     set_seed(seed)
     arrays = build_stage_g_arrays(
-        data, dataset_dir, "E1", "global_train_zscore", 30, shuffle_seed,
+        data, dataset_dir, "E1", config.normalization, 30, shuffle_seed,
     )
     projection = _fit_projection_for_config(arrays, config)
     backbone_config = _make_backbone_config(arrays, config.hidden_size)
@@ -544,10 +648,10 @@ def fit_stage_u(data: StageBData, dataset_dir: str | Path, seed: int,
     real, correction = predict_stage_u(model, arrays, base.dev_index, device, True)
     h2, _ = predict_stage_u(model, arrays, base.dev_index, device, False)
     shuffle_arrays = build_stage_g_arrays(
-        data, dataset_dir, "E2", "global_train_zscore", 30, shuffle_seed,
+        data, dataset_dir, "E2", config.normalization, 30, shuffle_seed,
     )
     zero_arrays = build_stage_g_arrays(
-        data, dataset_dir, "E8", "global_train_zscore", 30, shuffle_seed,
+        data, dataset_dir, "E8", config.normalization, 30, shuffle_seed,
     )
     shuffled, _ = predict_stage_u(model, shuffle_arrays, base.dev_index, device, True)
     zero, _ = predict_stage_u(model, zero_arrays, base.dev_index, device, True)
@@ -586,7 +690,7 @@ def fit_stage_u(data: StageBData, dataset_dir: str | Path, seed: int,
         "correction_abs_mean": correction_abs_mean,
         "eeg_gradient_norm": gradient_norm,
         "permutation_sensitivity": sensitivity,
-        "normalization": "global_train_zscore",
+        "normalization": config.normalization,
         "normalization_audit": arrays.normalization_audit,
         "uses_profile": config.use_profile,
         "uses_dynamic": config.use_dynamic,
@@ -595,6 +699,9 @@ def fit_stage_u(data: StageBData, dataset_dir: str | Path, seed: int,
         "pairwise_weight": config.pairwise_weight,
         "pair_cap_per_user": config.pair_cap_per_user,
         "hard_negative_pairs": config.hard_negative_pairs,
+        "listwise_weight": config.listwise_weight,
+        "user_weight_power": config.user_weight_power,
+        "correction_l2": config.correction_l2,
         "history_length": 30,
         "history_feature_set": "behavior",
         "id_mode": "content_only",
@@ -667,10 +774,57 @@ def stage_u_development_configs(suite: str) -> list[StageUConfig]:
                 hard_negative_pairs=True,
             ),
         ]
+    if suite == "v2e":
+        return [
+            StageUConfig(
+                "V2E-dynamic-gated-hardneg-cap16-p0p10",
+                True, True, "gated",
+                pairwise_weight=0.1,
+                pair_cap_per_user=16,
+                hard_negative_pairs=True,
+            ),
+            StageUConfig(
+                "V2E-dynamic-gated-listwise-0p02",
+                True, True, "gated",
+                pairwise_weight=0.05,
+                pair_cap_per_user=16,
+                hard_negative_pairs=True,
+                listwise_weight=0.02,
+            ),
+            StageUConfig(
+                "V2E-dynamic-gated-userw0p5-listwise",
+                True, True, "gated",
+                pairwise_weight=0.05,
+                pair_cap_per_user=16,
+                hard_negative_pairs=True,
+                listwise_weight=0.02,
+                user_weight_power=0.5,
+            ),
+            StageUConfig(
+                "V2E-dynamic-gated-session-resid-shrink",
+                True, True, "gated",
+                pairwise_weight=0.05,
+                pair_cap_per_user=16,
+                hard_negative_pairs=True,
+                listwise_weight=0.02,
+                correction_l2=0.005,
+                normalization="session_residual",
+            ),
+            StageUConfig(
+                "V2E-gated-cross-attn-subject-resid-shrink",
+                True, True, "gated_cross_attention",
+                pairwise_weight=0.05,
+                pair_cap_per_user=16,
+                hard_negative_pairs=True,
+                listwise_weight=0.02,
+                correction_l2=0.005,
+                normalization="subject_residual",
+            ),
+        ]
     if suite == "all":
         return (
             stage_u_development_configs("u1")
             + stage_u_development_configs("u2")
             + stage_u_development_configs("u3")
         )
-    raise ValueError("suite must be one of u1, u2, u3, v1, v2c, all")
+    raise ValueError("suite must be one of u1, u2, u3, v1, v2c, v2e, all")
