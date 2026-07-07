@@ -1,0 +1,13 @@
+fold,candidate,uses_eeg,control_type,normalization,history_length,train_pair_count,train_pair_rows_with_reverse,train_valid_context_count,train_user_count_with_pairs,train_feature_dim,pairwise_C
+1,V2H-local-H2_E0,False,H2_E0_non_eeg,global_train_zscore,30,7061,14122,81,30,79,0.1
+1,V2H-local-zero,False,zero_eeg_control,global_train_zscore,30,7061,14122,81,30,699,0.1
+1,V2H-local-shuffle,False,shuffle_eeg_control,global_train_zscore,30,7061,14122,81,30,699,0.1
+1,V2H-local-real,True,real_eeg,global_train_zscore,30,7061,14122,81,30,699,0.1
+2,V2H-local-H2_E0,False,H2_E0_non_eeg,global_train_zscore,30,8727,17454,100,30,79,0.1
+2,V2H-local-zero,False,zero_eeg_control,global_train_zscore,30,8727,17454,100,30,699,0.1
+2,V2H-local-shuffle,False,shuffle_eeg_control,global_train_zscore,30,8727,17454,100,30,699,0.1
+2,V2H-local-real,True,real_eeg,global_train_zscore,30,8727,17454,100,30,699,0.1
+3,V2H-local-H2_E0,False,H2_E0_non_eeg,global_train_zscore,30,10280,20560,111,30,79,0.1
+3,V2H-local-zero,False,zero_eeg_control,global_train_zscore,30,10280,20560,111,30,699,0.1
+3,V2H-local-shuffle,False,shuffle_eeg_control,global_train_zscore,30,10280,20560,111,30,699,0.1
+3,V2H-local-real,True,real_eeg,global_train_zscore,30,10280,20560,111,30,699,0.1
