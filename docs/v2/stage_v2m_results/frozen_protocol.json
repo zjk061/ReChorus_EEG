@@ -1,0 +1,77 @@
+{
+  "phase": "V2-M",
+  "protocol_id": "V2M-two_stage_user_local_reranker-v1",
+  "split_version": "protocol_a_rollv2_cv3",
+  "locked_test_accessed": false,
+  "user_approval_recorded": true,
+  "approval_date": "2026-07-07",
+  "approval_note": "User approved formal shift to two-stage user-local reranker / same-user local ranking protocol.",
+  "protocol_family": "two_stage_user_local_reranker",
+  "approved_research_question": "Can real historical EEG improve same-user personalized reranking AUC inside a two-stage recommender protocol?",
+  "not_claimed_research_question": "This protocol is not a claim that the EEG ranker is a globally calibrated like-probability model for cross-user comparison.",
+  "stage_1_candidate_source": {
+    "name": "rolling_like_global_candidate_provider",
+    "description": "A first-stage rolling-like/global model or candidate provider produces the user-specific candidate set and optional base score before EEG reranking.",
+    "current_reference": "V1-profile-dynamic-gated_cross_attention",
+    "reference_gauc": 0.6160204758227728,
+    "reference_macro_user_auc": 0.6193525280446578,
+    "reference_global_auc": 0.654840267665957
+  },
+  "stage_2_eeg_reranker": {
+    "name": "V2H-local-real with V2-J train-only score alignment",
+    "selected_alignment": "user_center_alpha_2p0",
+    "selected_sampling_definition": "same_session",
+    "candidate_from_stage": "V2-J",
+    "uses_real_eeg": true,
+    "allowed_rerank_scope": [
+      "same_user",
+      "same_session_when_available",
+      "same_candidate_set_from_stage_1"
+    ],
+    "forbidden_rerank_scope": [
+      "cross_user_reordering_by_eeg_score",
+      "using_current_item_eeg_or_current_maes",
+      "using_future_events_or_locked_test_statistics"
+    ]
+  },
+  "allowed_inputs_at_prediction_time": [
+    "user static/profile features available before candidate display",
+    "candidate item/context features available before display",
+    "strict historical interactions before current event",
+    "strict historical EEG and MAES before current event",
+    "stage-1 candidate membership or base score when generated without locked test"
+  ],
+  "forbidden_inputs_at_prediction_time": [
+    "current event label",
+    "current event EEG",
+    "current event MAES",
+    "future interactions",
+    "locked test labels, metrics, predictions, or distribution statistics"
+  ],
+  "primary_dev_reference": {
+    "best_event_protocol": "v2j_train_only_user_centered_transfer",
+    "best_event_mean_gauc": 0.6679187710470293,
+    "best_event_mean_macro_user_auc": 0.6682603549815852,
+    "best_event_mean_global_auc": 0.5871749758487417,
+    "best_event_delta_gauc_vs_current_champion": 0.051898295224256596,
+    "best_local_protocol": "v2j_same_user_local_ranking_metric",
+    "best_local_protocol_gauc": 0.6756975219324226,
+    "best_local_protocol_macro_user_auc": 0.6780740753672072,
+    "best_sampling_definition": "same_session"
+  },
+  "auc_reachability_boundary": {
+    "target_auc_floor": 0.8,
+    "best_event_gap_to_0p8": 0.1320812289529707,
+    "best_local_or_protocol_gap_to_0p8": 0.12430247806757744,
+    "original_rolling_model_repair_to_0p8_supported": false
+  },
+  "selection_rules": [
+    "Use only AUC-class metrics for model selection and stage decisions.",
+    "Primary order remains GAUC > Macro User AUC > Global AUC within the active protocol.",
+    "Do not treat a single fold, seed, or run as a formal champion.",
+    "Real EEG candidates must beat H2/E0, zero EEG, and shuffle EEG controls under the same protocol.",
+    "Global AUC remains a reported risk for score comparability but does not invalidate a same-user reranker win by itself.",
+    "Locked test remains inaccessible until explicit final-test approval."
+  ],
+  "next_stage": "V2-N_protocolized_reranker_improvement"
+}

@@ -1,0 +1,4 @@
+real_candidate,control_candidate,control_type,seed_count,mean_real_transfer_gauc,mean_control_transfer_gauc,mean_delta_transfer_gauc,seed_win_rate_transfer_gauc,mean_delta_transfer_macro_user_auc,mean_delta_transfer_global_auc,mean_delta_local_user_pair_gauc,seed_win_rate_local_user_pair_gauc
+V2K-real-full_mean_std,V2K-H2_E0-full_mean_std,H2_E0_non_eeg,5,0.6627238336474373,0.5897744069349835,0.07294942671245382,1.0,0.07229725638852624,-0.023871996917737226,0.07088679816161496,1.0
+V2K-real-full_mean_std,V2K-shuffle-full_mean_std,shuffle_eeg_control,5,0.6627238336474373,0.620456872579012,0.04226696106842522,1.0,0.043489164641942454,-0.0025761647379342278,0.04763684013381875,1.0
+V2K-real-full_mean_std,V2K-zero-full_mean_std,zero_eeg_control,5,0.6627238336474373,0.5911640605509004,0.07155977309653691,1.0,0.07007181920078749,-0.01782055673180718,0.06905832611638771,1.0

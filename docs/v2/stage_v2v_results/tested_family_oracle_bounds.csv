@@ -1,0 +1,5 @@
+phase,protocol_id,split_version,oracle_type,is_deployable,selected_rule,mean_protocol_gauc,mean_protocol_macro_user_auc,mean_event_transfer_gauc,fold_seed_std_protocol_gauc,tested_variant_count
+V2-V,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,single_deployable_variant_best,True,V2-S::margin_power0p2_base0p025,0.6813695123598441,0.6876784697797248,0.6716831716777638,0.032093054686412555,62
+V2-V,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,dev_only_fold_seed_oracle,False,best variant chosen separately for every dev fold/seed,0.6914261549423487,0.6965850976796388,0.6823853418274929,0.026851561984936507,62
+V2-V,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,dev_only_fold_mean_oracle,False,best variant chosen separately for every dev fold,0.6858167014923522,0.6932381541075242,0.6763640811839916,0.02674270894383573,62
+V2-V,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,dev_only_seed_mean_oracle,False,best variant chosen separately for every dev seed,0.6838505008172286,0.692274643567049,0.6787777665713375,0.005170478318065232,62

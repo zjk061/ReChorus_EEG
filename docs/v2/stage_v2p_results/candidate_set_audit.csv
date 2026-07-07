@@ -1,0 +1,5 @@
+phase,protocol_id,level,fold,seed,event_count,user_count,context_count,valid_context_count,valid_context_rate,total_pair_count,median_context_event_count,median_valid_context_pair_count,max_valid_context_pair_count,top_context_pair_share,top10pct_context_pair_share,all_positive_context_count,all_negative_context_count
+V2-P,V2M-two_stage_user_local_reranker-v1,overall,0,2026,1062,30,69,59,0.855072463768116,3491,14.0,40.0,192,0.054998567745631624,0.26811801775995414,4,6
+V2-P,V2M-two_stage_user_local_reranker-v1,fold,1,2026,349,30,45,35,0.7777777777777778,598,8.0,10.0,56,0.09364548494983277,0.3177257525083612,6,4
+V2-P,V2M-two_stage_user_local_reranker-v1,fold,2,2026,356,30,42,30,0.7142857142857143,584,9.0,21.0,48,0.0821917808219178,0.21232876712328766,4,8
+V2-P,V2M-two_stage_user_local_reranker-v1,fold,3,2026,357,30,39,28,0.717948717948718,618,10.0,19.0,50,0.08090614886731391,0.22491909385113268,1,10

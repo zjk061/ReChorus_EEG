@@ -1,0 +1,23 @@
+{
+  "phase": "V2-M",
+  "protocol_id": "V2M-two_stage_user_local_reranker-v1",
+  "locked_test_accessed": false,
+  "requirements": {
+    "user_approved_protocol_change": true,
+    "locked_test_not_accessed": true,
+    "auc_only_metric_contract": true,
+    "has_eligible_real_eeg_candidate": true,
+    "eligible_candidate_stable_vs_current_champion": true,
+    "target_0p8_reached": false,
+    "locked_test_approval_available": false
+  },
+  "ready_for_protocolized_dev_iteration": true,
+  "ready_for_f1_freeze_audit": true,
+  "ready_for_locked_test": false,
+  "blocked_items_before_locked_test": [
+    "target_0p8_reached",
+    "locked_test_approval_available"
+  ],
+  "recommended_next_stage": "V2-N_protocolized_reranker_improvement",
+  "reason": "The protocol is now approved and frozen for dev iteration.  It is not ready for locked test because 0.8 AUC has not been reached and locked-test approval remains absent."
+}

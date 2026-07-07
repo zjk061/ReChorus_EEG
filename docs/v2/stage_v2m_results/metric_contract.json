@@ -1,0 +1,48 @@
+{
+  "phase": "V2-M",
+  "protocol_id": "V2M-two_stage_user_local_reranker-v1",
+  "locked_test_accessed": false,
+  "auc_only_selection": true,
+  "metric_priority": [
+    {
+      "rank": 1,
+      "name": "protocol_gauc",
+      "definition": "Weighted user-level AUC under the active protocol. For event transfer this is rolling-dev GAUC; for local reranking this is same-user local user-pair GAUC.",
+      "current_best": 0.6756975219324226
+    },
+    {
+      "rank": 2,
+      "name": "protocol_macro_user_auc",
+      "definition": "Unweighted mean of valid user AUC values under the active protocol.",
+      "current_best": 0.6780740753672072
+    },
+    {
+      "rank": 3,
+      "name": "global_auc_risk",
+      "definition": "Cross-user event-level AUC. It is recorded as a score-comparability risk, not as a veto against a valid same-user reranker improvement.",
+      "current_best": 0.5871749758487417
+    }
+  ],
+  "reported_but_not_selection_blockers": [
+    "LogLoss",
+    "Brier",
+    "ECE",
+    "accuracy",
+    "F1"
+  ],
+  "minimum_reporting_requirements": [
+    "mean metrics across all rolling folds",
+    "multi-seed stability when training is stochastic",
+    "seed win rate versus current formal champion",
+    "H2/E0, zero EEG, and shuffle EEG controls",
+    "locked_test_accessed flag",
+    "explicit statement whether 0.8 AUC is reached"
+  ],
+  "promotion_boundary": {
+    "current_formal_original_rolling_champion": "V1-profile-dynamic-gated_cross_attention",
+    "current_formal_original_rolling_champion_gauc": 0.6160204758227728,
+    "target_auc_floor": 0.8,
+    "new_protocol_can_be_promoted_on_dev": true,
+    "locked_test_requires_separate_user_approval": true
+  }
+}

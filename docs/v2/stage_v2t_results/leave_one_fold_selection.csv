@@ -1,0 +1,4 @@
+phase,protocol_id,split_version,heldout_fold,selected_by_training_folds,training_fold_protocol_gauc,training_fold_macro_user_auc,heldout_protocol_gauc,v2s_selected_heldout_protocol_gauc,heldout_delta_vs_v2s_selected,training_selection_is_v2s_selected
+V2-T,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,1,margin_power0p2_base0p05,0.6616432814647337,0.6643001393386456,0.7190635451505016,0.7210702341137123,-0.0020066889632106566,False
+V2-T,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,2,margin_power0p2_base0p025,0.6920885151151086,0.7093236718505544,0.659931506849315,0.659931506849315,0.0,True
+V2-T,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,3,margin_power0p2_base0p025,0.6905008704815138,0.689703127229913,0.6631067961165049,0.6631067961165049,0.0,True

@@ -1,0 +1,19 @@
+{
+  "phase": "V2-L",
+  "split_version": "protocol_a_rollv2_cv3",
+  "locked_test_accessed": false,
+  "auc_only_selection": true,
+  "target_auc_floor": 0.8,
+  "best_event_protocol": "v2j_train_only_user_centered_transfer",
+  "best_event_mean_gauc": 0.6679187710470293,
+  "best_event_gap_to_0p8": 0.1320812289529707,
+  "best_local_or_protocol_mean_gauc": 0.6756975219324226,
+  "best_local_or_protocol_gap_to_0p8": 0.12430247806757744,
+  "best_sampling_definition": "same_session",
+  "best_sampling_mean_transfer_gauc": 0.6624706714176868,
+  "v2k_sampling_improved_over_v2j_event_gauc": false,
+  "existing_original_rolling_protocol_model_repair_to_0p8_supported": false,
+  "reason": "The strongest train/dev EEG evidence remains around 0.66-0.68 AUC. V2-K controlled representation and sampling changes did not move the event-level GAUC toward 0.8.  This does not prove 0.8 impossible, but current evidence does not support reaching 0.8 by minor model repair under the original rolling-like protocol.",
+  "recommended_next_action": "request_user_approval_to_formalize_two_stage_user_local_reranker_protocol",
+  "requires_user_approval": true
+}

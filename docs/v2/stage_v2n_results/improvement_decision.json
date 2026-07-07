@@ -1,0 +1,32 @@
+{
+  "phase": "V2-N",
+  "protocol_id": "V2M-two_stage_user_local_reranker-v1",
+  "split_version": "protocol_a_rollv2_cv3",
+  "locked_test_accessed": false,
+  "auc_only_selection": true,
+  "target_auc_floor": 0.8,
+  "selected_candidate": "V2H-local-real",
+  "selected_score_variant": "eeg_plus_base_0p05",
+  "selected_blend_source": "base_logit",
+  "selected_blend_weight": 0.05,
+  "selected_mean_protocol_gauc": 0.6760938781668874,
+  "selected_mean_protocol_macro_user_auc": 0.6805579847699132,
+  "selected_mean_protocol_global_auc": 0.6760938781668874,
+  "selected_mean_event_transfer_gauc": 0.6688599504001635,
+  "baseline_eeg_only_protocol_gauc": 0.6756975219324226,
+  "delta_protocol_gauc_vs_v2m_eeg_only": 0.00039635623446476753,
+  "selected_seed_count": 5,
+  "selected_seed_beats_current_champion_rate": 1.0,
+  "stable_above_current_champion": true,
+  "real_eeg_beats_all_controls": true,
+  "improved_over_v2m_eeg_only": true,
+  "hits_0p8": false,
+  "reason_codes": [
+    "improves_v2m_eeg_only",
+    "real_eeg_beats_controls",
+    "stable_above_current_champion",
+    "auc_below_0p8"
+  ],
+  "final_action": "promote_v2n_blend_candidate_continue_protocolized_development",
+  "next_stage": "V2-O_protocolized_listwise_or_reliability_search"
+}

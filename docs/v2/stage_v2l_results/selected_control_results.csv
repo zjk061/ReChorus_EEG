@@ -1,0 +1,4 @@
+score_alignment,real_candidate,control_candidate,control_type,seed_count,mean_real_transfer_gauc,mean_control_transfer_gauc,mean_delta_transfer_gauc,seed_win_rate_transfer_gauc,mean_delta_transfer_macro_user_auc,mean_delta_transfer_global_auc,mean_delta_local_user_pair_gauc,seed_win_rate_local_user_pair_gauc
+user_center_alpha_2p0,V2H-local-real,V2H-local-H2_E0,H2_E0_non_eeg,5,0.6679187710470293,0.587174204846623,0.0807445662004065,1.0,0.078289981733434,-0.0271067403140291,0.0790782204714735,1.0
+user_center_alpha_2p0,V2H-local-real,V2H-local-shuffle,shuffle_eeg_control,5,0.6679187710470293,0.6285841865279359,0.0393345845190935,1.0,0.0386184273178321,-0.0104742453684137,0.0433732352214227,1.0
+user_center_alpha_2p0,V2H-local-real,V2H-local-zero,zero_eeg_control,5,0.6679187710470293,0.5803985535015519,0.0875202175454775,1.0,0.0832131345653171,-0.0167501281846776,0.081907994606405,1.0

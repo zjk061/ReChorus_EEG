@@ -1,0 +1,62 @@
+[
+  {
+    "option_id": "approve_session_local_task_redefinition",
+    "requires_user_approval": true,
+    "decision_type": "task_definition_change",
+    "summary": "把主监督目标正式转向更贴合 EEG 的同用户/同会话内偏好排序，而不是继续把历史 EEG 强行映射到跨时间 rolling-like 二分类。",
+    "why_considered": "V2-G 显示 local task 的 EEG-H2 增益 0.018685 高于原协议 0.014639，但当前 local/two-stage 协议仍未接近 0.8，需要更明确的 EEG-primary 任务定义。",
+    "expected_auc_path": "提升 EEG 可表达性；是否能到 0.8 仍需要新协议验证。",
+    "main_risk": "会改变研究问题；不能再把结果解释为原 rolling-like 全局二分类任务的直接冠军。",
+    "minimum_next_artifact": "formal_task_definition_v3.json + new protocol metric contract + train/dev-only replay",
+    "evidence_strength": "medium",
+    "priority": 1
+  },
+  {
+    "option_id": "approve_context_valid_sampling_protocol",
+    "requires_user_approval": true,
+    "decision_type": "protocol_sampling_change",
+    "summary": "调整训练/评估采样协议，优先构造有正负样本的有效 user/session context，减少 all-positive/all-negative context 对 AUC 的稀释。",
+    "why_considered": "V2-V 有效正负 pair context rate 只有 0.738，V2-F fold-user 中位样本数只有 12.0。",
+    "expected_auc_path": "增加可评价 pair 与用户内排序信号密度；可能提高 GAUC/Macro 稳定性。",
+    "main_risk": "如果评估协议也过滤样本，必须明确新协议语义，不能与旧协议指标直接混用。",
+    "minimum_next_artifact": "context_valid_sampling_manifest.csv + protocol delta report",
+    "evidence_strength": "high",
+    "priority": 2
+  },
+  {
+    "option_id": "approve_label_quality_or_data_collection_revision",
+    "requires_user_approval": true,
+    "decision_type": "data_label_change",
+    "summary": "转向标签质量、用户样本量和数据采集设计：补足每个用户/会话的有效正负 pair，或清洗弱/噪声标签。",
+    "why_considered": "V2-F history EEG probe mean GAUC 只有 0.556018，当前 dev-only oracle 也只有 0.691426，离 0.8 差 0.108574。",
+    "expected_auc_path": "通过增强标签可预测性和每用户样本量改善上限，而不是继续从稀疏标签里榨模型。",
+    "main_risk": "需要额外数据工作或重新标注；短期不一定产生新模型结果。",
+    "minimum_next_artifact": "data_gap_spec.md + collection_or_cleaning_targets.json",
+    "evidence_strength": "high",
+    "priority": 3
+  },
+  {
+    "option_id": "do_not_change_protocol_freeze_current_dev_best",
+    "requires_user_approval": true,
+    "decision_type": "freeze_without_0p8",
+    "summary": "不改变任务/协议，冻结当前 dev 最佳作为当前协议下的最佳可复现候选，并停止同类模型扩展。",
+    "why_considered": "当前 deployable 最佳 GAUC 0.681370，已测试同类 dev oracle GAUC 0.691426 仍远低于 0.8。",
+    "expected_auc_path": "不追求 0.8，只保留真实 EEG 显著参与的当前最强结果。",
+    "main_risk": "无法满足 0.8 及格线；只能作为阶段性研究结论。",
+    "minimum_next_artifact": "freeze_candidate_manifest.json + final dev report draft",
+    "evidence_strength": "high",
+    "priority": 4
+  },
+  {
+    "option_id": "approve_new_eeg_signal_or_feature_acquisition",
+    "requires_user_approval": true,
+    "decision_type": "feature_or_data_acquisition_change",
+    "summary": "转向新增 EEG 信号质量、事件对齐或特征采集方案，而不是继续复用当前历史 EEG 聚合特征。",
+    "why_considered": "V2-L 最强 local/protocol gap to 0.8 仍为 0.124302，V2-U label-free 可靠性门控没有超过 V2-S reference。",
+    "expected_auc_path": "从源头提高 EEG 与当前偏好的可预测性。",
+    "main_risk": "需要新增数据或重新处理 EEG；不是当前产物内的小修。",
+    "minimum_next_artifact": "eeg_signal_gap_report.md + new_feature_feasibility_matrix.csv",
+    "evidence_strength": "medium",
+    "priority": 5
+  }
+]

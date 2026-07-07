@@ -1,0 +1,17 @@
+phase,protocol_id,split_version,seed,fold,event_count,context_count,valid_pair_context_count,valid_pair_context_rate,total_pair_count,median_context_event_count,median_valid_pair_count,all_positive_context_count,all_negative_context_count,mean_history_count,mean_context_eeg_std
+V2-V,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,0,0,354,630,465,0.7380952380952381,9000,9.0,19.0,55,110,79.54425612052731,0.8132311770159149
+V2-V,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,2026,1,349,45,35,0.7777777777777778,598,8.0,10.0,6,4,64.42222222222222,0.8759203101244847
+V2-V,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,2026,2,356,42,30,0.7142857142857143,584,9.0,21.0,4,8,77.83333333333333,0.9056216511667946
+V2-V,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,2026,3,357,39,28,0.717948717948718,618,10.0,19.0,1,10,88.23076923076923,0.7677679928834577
+V2-V,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,2027,1,349,45,35,0.7777777777777778,598,8.0,10.0,6,4,64.42222222222222,0.8771701045450143
+V2-V,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,2027,2,356,42,30,0.7142857142857143,584,9.0,21.0,4,8,77.83333333333333,0.8456175820578984
+V2-V,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,2027,3,357,39,28,0.717948717948718,618,10.0,19.0,1,10,88.23076923076923,0.7658046068434012
+V2-V,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,2028,1,349,45,35,0.7777777777777778,598,8.0,10.0,6,4,64.42222222222222,0.8420026560390323
+V2-V,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,2028,2,356,42,30,0.7142857142857143,584,9.0,21.0,4,8,77.83333333333333,0.8230988635219579
+V2-V,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,2028,3,357,39,28,0.717948717948718,618,10.0,19.0,1,10,88.23076923076923,0.606486329096628
+V2-V,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,2029,1,349,45,35,0.7777777777777778,598,8.0,10.0,6,4,64.42222222222222,0.8973779023763895
+V2-V,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,2029,2,356,42,30,0.7142857142857143,584,9.0,21.0,4,8,77.83333333333333,0.8254524017831619
+V2-V,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,2029,3,357,39,28,0.717948717948718,618,10.0,19.0,1,10,88.23076923076923,0.6824403389226833
+V2-V,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,2030,1,349,45,35,0.7777777777777778,598,8.0,10.0,6,4,64.42222222222222,0.8401414150261591
+V2-V,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,2030,2,356,42,30,0.7142857142857143,584,9.0,21.0,4,8,77.83333333333333,0.9152932423392934
+V2-V,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,2030,3,357,39,28,0.717948717948718,618,10.0,19.0,1,10,88.23076923076923,0.7282722585123678

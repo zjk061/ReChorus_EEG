@@ -1,0 +1,4 @@
+representation,pair_protocol,candidate,seed_count,mean_transfer_gauc,std_transfer_gauc,mean_transfer_macro_user_auc,mean_transfer_global_auc,mean_local_user_pair_gauc,seed_beats_current_champion_rate,seed_hits_0p8_rate
+full_mean_std,same_session,V2K-real-full_mean_std-same_session,3,0.6624706714176868,0.011062413827139206,0.6647658833670739,0.5932074817608016,0.6676936121213517,1.0,0.0
+full_mean_std,same_user_recent20,V2K-real-full_mean_std-same_user_recent20,3,0.646499022479495,0.007629220648373676,0.6429771081358383,0.6220809678407216,0.663459565673233,1.0,0.0
+full_mean_std,same_user_all,V2K-real-full_mean_std-same_user_all,3,0.6115830757925382,0.015640434339643024,0.6117712242563433,0.63749304618689,0.6205631682120231,0.3333333333333333,0.0

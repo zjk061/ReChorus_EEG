@@ -1,0 +1,2 @@
+phase,protocol_id,split_version,best_variant,best_protocol_gauc,tight_top_tolerance,near_top_tolerance,tight_top_variant_count,near_top_variant_count,tight_top_power_min,tight_top_power_max,tight_top_base_min,tight_top_base_max,near_top_power_min,near_top_power_max,near_top_base_min,near_top_base_max
+V2-T,V2M-two_stage_user_local_reranker-v1,protocol_a_rollv2_cv3,margin_power0p2_base0p025,0.6813695123598442,0.001,0.002,3,9,0.15,0.2,0.025,0.05,0.1,0.4,0.025,0.1
