@@ -107,8 +107,11 @@ def _history_features(events: pd.DataFrame) -> pd.DataFrame:
 def load_stage_b_data(dataset_dir: str | Path, history_max: int = 20,
                       split_event_ids: dict[str, list[str]] | None = None) -> StageBData:
     dataset_dir = Path(dataset_dir)
-    manifest = json.loads((dataset_dir / "split_manifest.json").read_text(encoding="utf-8"))
-    phase_ids = manifest["protocol_a"]["event_ids"] if split_event_ids is None else split_event_ids
+    if split_event_ids is None:
+        manifest = json.loads((dataset_dir / "split_manifest.json").read_text(encoding="utf-8"))
+        phase_ids = manifest["protocol_a"]["event_ids"]
+    else:
+        phase_ids = split_event_ids
     train_ids, dev_ids = set(phase_ids["train"]), set(phase_ids["dev"])
     if train_ids & dev_ids:
         raise ValueError("train/dev event IDs overlap")

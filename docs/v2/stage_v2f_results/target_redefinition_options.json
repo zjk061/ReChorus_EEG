@@ -1,0 +1,45 @@
+{
+  "phase": "V2-F",
+  "locked_test_accessed": false,
+  "diagnostic_basis": {
+    "median_fold_user_dev_samples": 12.0,
+    "invalid_fold_user_auc_rate": 0.13333333333333333,
+    "mean_history_eeg_probe_gauc": 0.556017869680718,
+    "mean_fold_like_rate_abs_delta": 0.032473679920811405,
+    "mean_user_like_rate_abs_delta": 0.16420134325604718
+  },
+  "options": [
+    {
+      "name": "session_or_block_local_ranking",
+      "priority": 1,
+      "change": "把监督目标从跨长时间 rolling 的二分类偏好，改成同用户同 session/block 内的局部排序或偏好差分。",
+      "why": "当前 fold-user dev 中位数约为 12，跨 fold 漂移强；局部排序更贴近 EEG 状态变化，也减少用户长期偏置影响。",
+      "expected_auc_effect": "可能提升 Macro User AUC 和 GAUC 的稳定性，但需要重新定义验证协议。",
+      "requires_locked_test": false
+    },
+    {
+      "name": "multi_task_affective_target",
+      "priority": 2,
+      "change": "把 interest/immersion/valence/arousal 作为辅助或中间监督目标，再映射到 like。",
+      "why": "binary like 目标稀疏，后验情绪/沉浸评分可作为 EEG 更直接表达的连续状态诊断目标；不得作为当前候选训练泄漏，需要重新制定任务合同。",
+      "expected_auc_effect": "如果 EEG 对情绪状态更敏感，可能比直接二分类 like 更接近可学习信号。",
+      "requires_locked_test": false
+    },
+    {
+      "name": "larger_per_user_validation_or_grouped_protocol",
+      "priority": 3,
+      "change": "增加每个 fold-user 的 dev 样本量，或改为更少但更厚的 per-user rolling blocks。",
+      "why": "当前许多用户切片 AUC 标准误很大，单用户 AUC 的测量噪声会压制稳定 GAUC 判断。",
+      "expected_auc_effect": "不保证提升模型真实能力，但能降低选模噪声并更可靠地评估 0.8 是否可达。",
+      "requires_locked_test": false
+    },
+    {
+      "name": "label_audit_and_repeat_collection",
+      "priority": 4,
+      "change": "对重复 user-item、重复 item 和低一致性 session 做人工/规则审计，必要时增加重复标注或剔除不稳定标签。",
+      "why": "若同一用户或同一 item 的标签冲突较多，0.8 AUC 可能被标签噪声上限限制。",
+      "expected_auc_effect": "主要提升可达性解释和数据质量，模型收益依赖标签修复幅度。",
+      "requires_locked_test": false
+    }
+  ]
+}
